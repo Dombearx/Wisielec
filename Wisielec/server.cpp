@@ -40,8 +40,9 @@ void readMessage(int clientFd){
 	while(true) {
 		// read a message
 		char buffer[1];
+		char bufferToSend[3];
 		int count = read(clientFd, buffer, 1);
-
+		bool flag = false;
 		if (count < 1) {
 			printf("removing %d\n", clientFd);
 			clientFds.erase(clientFd);
@@ -50,8 +51,15 @@ void readMessage(int clientFd){
 		} else {
 			while(i < word.size){
 				if (word[i] == buffer[0]);
-				sendToAll(clientFd, buffer, 1);
+				bufferToSend[0] = buffer[0];
+				bufferToSend[1] = i; //i jako char więc trzeba potem konwertować na inta jako index litery w haśle
+				sendToAll(clientFd, bufferToSend, 3);
+				flag = true;
 			}			
+		}
+		if(!flag){
+			bufferToSend[2] = 'K'; //nie było wystąpienia litery - punkt karny
+			res = write(clientFd, bufferToSend, 3);
 		}
 	}
 }
@@ -127,10 +135,15 @@ void closeServer(int){
 	exit(0);
 }
 
-void sendToAll(char * buffer, int count){
+void sendToAll(int senderFd, char * buffer, int count){
 	int res;
 	decltype(clientFds) bad;
 	for(int clientFd : clientFds){
+		if(clientFd == senderFd){
+			bufferToSend[2] = 'T'; //powinien dostać punkt
+		} else {
+			bufferToSend[2] = 'N'; //nie powinien dostać punktu
+		}
 		res = write(clientFd, buffer, count);
 		if(res!=count)
 			bad.insert(clientFd);
