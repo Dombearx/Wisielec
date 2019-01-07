@@ -13,7 +13,6 @@
 #include <cstdio>
 
 
-#include <QMessageBox>
 
 using namespace std;
 
@@ -66,6 +65,13 @@ void GameWindow::connectToServer(){
 		ssize_t bufsize1 = 255, received1;
 		char buffer1[bufsize1];
 		received1 = readData(sock, buffer1, bufsize1);
+		if(buffer1[2] == 'T'){
+			//Trzeba dodać punkty
+			//Odkryć literę buffer1[0] o indexie (int) buffer1[1]
+		}
+		if(buffer1[2] == 'K'){
+			//Trzeba zwiększyć wisielca
+		}
 		writeData(1, buffer1, received1);
 	}
 /****************************/
@@ -101,6 +107,12 @@ void listenToKeyboard(int sock){
 		ssize_t bufsize2 = 255, received2;
 		char buffer2[bufsize2];
 		received2 = readData(0, buffer2, bufsize2);
+		if(buffer2[2] == 'T'){
+			//Trzeba dodać punkty
+		}
+		if(buffer2[2] == 'K'){
+			//Trzeba zwiększyć wisielca
+		}
 		writeData(sock, buffer2, received2);
 	}
 }
