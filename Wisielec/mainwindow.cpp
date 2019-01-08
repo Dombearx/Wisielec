@@ -18,10 +18,13 @@ MainWindow::MainWindow(QWidget *parent) :
 MainWindow::~MainWindow(){
     delete ui;
     delete game;
+    this->destroy(true,true);
 }
 
 void MainWindow::newGameBtnHit(){
     int port = ui->portSpinBox->value();
+    cout << "elo" << endl;
+    system(SHELLSCRIPT);
     game = new GameWindow("localhost", port);
     game->show();
 }

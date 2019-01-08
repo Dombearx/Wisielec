@@ -19,7 +19,10 @@ using namespace std;
 int servFd;
 
 // client sockets
-std::unordered_set<int> clientFds;
+unordered_set<int> clientFds;
+
+
+string word = "PASSWORD";
 
 // handles SIGINT
 void ctrl_c(int);
@@ -28,52 +31,29 @@ void ctrl_c(int);
 void sendToAllBut(int fd, char * buffer, int count);
 
 // converts cstring to port
-uint16_t readPort(char * txt);
+uint16_t readPort(const char * txt);
 
 // sets SO_REUSEADDR
 void setReuseAddr(int sock);
 
-String word = "Okoń";
+void sendToAll(int fd, char * buffer, int count);
+
+void readMessage(int fd);
 
 
-void readMessage(int clientFd){
-	while(true) {
-		// read a message
-		char buffer[1];
-		char bufferToSend[3];
-		int count = read(clientFd, buffer, 1);
-		bool flag = false;
-		if (count < 1) {
-			printf("removing %d\n", clientFd);
-			clientFds.erase(clientFd);
-			close(clientFd);
-			continue;
-		} else {
-			while(i < word.size){
-				if (word[i] == buffer[0]);
-				bufferToSend[0] = buffer[0];
-				bufferToSend[1] = i; //i jako char więc trzeba potem konwertować na inta jako index litery w haśle
-				sendToAll(clientFd, bufferToSend, 3);
-				flag = true;
-			}			
-		}
-		if(!flag){
-			bufferToSend[2] = 'K'; //nie było wystąpienia litery - punkt karny
-			res = write(clientFd, bufferToSend, 3);
-		}
-	}
-}
+
 
 int main(int argc, char ** argv){
 	// get and validate port number
-	auto port = readPort(27001);
+    string p = "27001";
+    auto port = readPort(p.c_str());
 	
 	// create socket
 	servFd = socket(AF_INET, SOCK_STREAM, 0);
 	if(servFd == -1) error(1, errno, "socket failed");
 	
 	// graceful ctrl+c exit
-	signal(SIGINT, ctrl_c);
+	//signal(SIGINT, ctrl_c);
 	// prevent dead sockets from throwing pipe errors on write
 	signal(SIGPIPE, SIG_IGN);
 	
@@ -114,7 +94,7 @@ int main(int argc, char ** argv){
 /****************************/
 }
 
-uint16_t readPort(char * txt){
+uint16_t readPort(const char * txt){
 	char * ptr;
 	auto port = strtol(txt, &ptr, 10);
 	if(*ptr!=0 || port<1 || (port>((1<<16)-1))) error(1,0,"illegal argument %s", txt);
@@ -127,7 +107,7 @@ void setReuseAddr(int sock){
 	if(res) error(1,errno, "setsockopt failed");
 }
 
-void closeServer(int){
+void closeServer(int fd){
 	for(int clientFd : clientFds)
 		close(clientFd);
 	close(servFd);
@@ -140,9 +120,9 @@ void sendToAll(int senderFd, char * buffer, int count){
 	decltype(clientFds) bad;
 	for(int clientFd : clientFds){
 		if(clientFd == senderFd){
-			bufferToSend[2] = 'T'; //powinien dostać punkt
+            buffer[2] = 'T'; //powinien dostać punkt
 		} else {
-			bufferToSend[2] = 'N'; //nie powinien dostać punktu
+            buffer[2] = 'N'; //nie powinien dostać punktu
 		}
 		res = write(clientFd, buffer, count);
 		if(res!=count)
@@ -155,3 +135,31 @@ void sendToAll(int senderFd, char * buffer, int count){
 	}
 }
 
+void readMessage(int clientFd){
+    while(true) {
+        // read a message
+        char buffer[1];
+        char bufferToSend[3];
+        int count = read(clientFd, buffer, 1);
+        bool flag = false;
+        if (count < 1) {
+            printf("removing %d\n", clientFd);
+            clientFds.erase(clientFd);
+            close(clientFd);
+            continue;
+        } else {
+            unsigned int i = 0;
+            while(i < word.size()){
+                if (word[i] == buffer[0]);
+                bufferToSend[0] = buffer[0];
+                bufferToSend[1] = i; //i jako char więc trzeba potem konwertować na inta jako index litery w haśle
+                sendToAll(clientFd, bufferToSend, 3);
+                flag = true;
+            }
+        }
+        if(!flag){
+            bufferToSend[2] = 'K'; //nie było wystąpienia litery - punkt karny
+            int res = write(clientFd, bufferToSend, 3);
+        }
+    }
+}

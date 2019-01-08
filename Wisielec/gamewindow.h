@@ -1,6 +1,9 @@
 #ifndef GAMEWINDOW_H
 #define GAMEWINDOW_H
 
+#include <stdio.h>
+#include <stdlib.h>
+
 #include <QWidget>
 #include <QTcpSocket>
 #include <QTimer>
