@@ -1,118 +1,96 @@
+#include <iostream>
+#include <unistd.h>
+#include <QMessageBox>
+
 #include "gamewindow.h"
 #include "ui_gamewindow.h"
-#include <cstdlib>
-#include <unistd.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <errno.h>
-#include <error.h>
-#include <netdb.h>
-#include <sys/epoll.h>
-#include <poll.h> 
-#include <thread>
-#include <cstdio>
-
-
 
 using namespace std;
 
-
-int points;
-
-GameWindow::GameWindow(QString host, int port, QWidget *parent) :
+GameWindow::GameWindow(QString host, int port, bool ser, QWidget *parent) :
     QWidget(parent),
     ui(new Ui::GameWindow)
 {
+    s = ser;
     ui->setupUi(this);
-    this->setHost(host);
-    this->setPort(port);
-	this->points = 0;
+    ServerHost = host;
+    ServerPort = port;
+    if(s) this_thread::sleep_for(chrono::milliseconds(1000));
+
+    connectToServer();
 }
-
-
 
 GameWindow::~GameWindow()
 {
     delete ui;
+    cout << "Koniec" << endl;
+    if(this->s) {
+        sendToServer('0'); //Zamknięcie serwera
+        //tserver.join();
+    }
 }
-
-
 
 void GameWindow::connectToServer(){
-    // Resolve arguments to IPv4 address with a port number
-	addrinfo *resolved, hints={.ai_flags=0, .ai_family=AF_INET, .ai_socktype=SOCK_STREAM};
-	int res = getaddrinfo(localhost, 27001, &hints, &resolved);
-	if(res || !resolved) error(1, 0, "getaddrinfo: %s", gai_strerror(res));
-	
-	// create socket
-	int sock = socket(resolved->ai_family, resolved->ai_socktype, 0);
-	if(sock == -1) error(1, errno, "socket failed");
-	
-	// attept to connect
-	res = connect(sock, resolved->ai_addr, resolved->ai_addrlen);
-	if(res) error(1, errno, "connect failed");
-	
-	// free memory
-	freeaddrinfo(resolved);
-	
-	// read from stdin, write to socket
-	thread t1(listenToKeyboard, sock);
-	t1.detach();
+    sock = new QTcpSocket(this);
+    sock->connectToHost(ServerHost, ServerPort);
 
-/****************************/
-	while(true) {
-		// read from socket, write to stdout
-		ssize_t bufsize1 = 255, received1;
-		char buffer1[bufsize1];
-		received1 = readData(sock, buffer1, bufsize1);
-		if(buffer1[2] == 'T'){
-			//Trzeba dodać punkty
-			//Odkryć literę buffer1[0] o indexie (int) buffer1[1]
-		}
-		if(buffer1[2] == 'K'){
-			//Trzeba zwiększyć wisielca
-		}
-		writeData(1, buffer1, received1);
-	}
-/****************************/
-	
-	close(sock);
+    connect(sock, &QTcpSocket::connected, this, &GameWindow::socketConnected);
+    connect(sock, &QTcpSocket::readyRead, this, &GameWindow::readFromServer);
 
+    connTimeoutTimer = new QTimer(this);
+    connTimeoutTimer->setSingleShot(true);
+    connect(connTimeoutTimer, &QTimer::timeout, [&]{
+        connTimeoutTimer->deleteLater();
+        QMessageBox::critical(this, "Error", "Connect timed out");
+        this->destroy(true,true);
+    });
+    connTimeoutTimer->start(3000);
 }
-
-
-/**
-Dodać do przycisku
-**/
 
 void GameWindow::socketConnected() {
     connTimeoutTimer->stop();
     connTimeoutTimer->deleteLater();
+    cout << "Connected" << endl;
+    sendToServer('1'); //Prosba o dolaczenie (jesli dolaczy w momencie kiedy gra juz trwa)
 }
 
-ssize_t readData(int fd, char * buffer, ssize_t buffsize){
-	auto ret = read(fd, buffer, buffsize);
-	if(ret==-1) error(1,errno, "read failed on descriptor %d", fd);
-	return ret;
+void GameWindow::readFromServer() {
+    QByteArray date = sock->read(512);
+    if(date[0] == '1')
+        startGame();
+    else if(date[0] == '2' || date[0] == '3' || date[0] == '4' || date[0] == '5')
+        newRound(date);
+    else if(date[0] == '6')
+        inGame();
+    else if(date[0] >= 'A' && date[0] <= 'Z')
+        cout << date[0] << endl;
 }
 
-void writeData(int fd, char * buffer, ssize_t count){
-	auto ret = write(fd, buffer, count);
-	if(ret==-1) error(1, errno, "write failed on descriptor %d", fd);
-	if(ret!=count) error(0, errno, "wrote less than requested to descriptor %d (%ld/%ld)", fd, count, ret);
+void GameWindow::sendToServer(char c) {
+    QString str = QChar(c);
+    QByteArray text = str.toUtf8();
+    sock->write(text);
 }
 
-void listenToKeyboard(int sock){
-	while(true) {
-		ssize_t bufsize2 = 255, received2;
-		char buffer2[bufsize2];
-		received2 = readData(0, buffer2, bufsize2);
-		if(buffer2[2] == 'T'){
-			//Trzeba dodać punkty
-		}
-		if(buffer2[2] == 'K'){
-			//Trzeba zwiększyć wisielca
-		}
-		writeData(sock, buffer2, received2);
-	}
+void GameWindow::startGame() {
+    ui->textEdit->setEnabled(true);
+    ui->letterEdit->setEnabled(true);
+    ui->letterBtn->setEnabled(true);
+    ui->textEdit->setText("Podaj litere");
+    ui->label->setText("Runda 1");
+}
+
+void GameWindow::newRound(QByteArray d) {
+    QString round = "Runda ";
+    round.append(d.at(0));
+    ui->letterBtn->setEnabled(true);
+    ui->label->setText(round);
+}
+
+void GameWindow::inGame() {
+    ui->label->setText("Połączono. Oczekiwanie na graczy.");
+}
+
+void GameWindow::destroyWindow() {
+    this->destroy(true,true);
 }
