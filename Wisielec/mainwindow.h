@@ -1,21 +1,18 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#define SHELLSCRIPT "\
-#/bin/bash \n\
-./server.o \n\
-clear\
-"
-
-
 #include <stdio.h>
 #include <stdlib.h>
+
 #include <QMainWindow>
 #include <QTcpSocket>
 #include <QTimer>
 #include <QtWidgets>
+#include <QVector>
 
 #include "gamewindow.h"
+#include "server.h"
+
 
 namespace Ui {
 class MainWindow;
@@ -29,6 +26,8 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    void waitForServer();
+
 protected:
     QTimer * connTimeoutTimer;
     void newGameBtnHit();
@@ -36,7 +35,9 @@ protected:
 
 private:
     Ui::MainWindow *ui;
-    GameWindow *game;
+    bool finish;
+    int serverCount;
+    QList<char*> ports;
 };
 
 #endif // MAINWINDOW_H
