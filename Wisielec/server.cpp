@@ -4,6 +4,7 @@ using namespace std;
 
 Server::Server(char * p) {
     prt = p;
+    word = "HASLOO";
 }
 
 Server::~Server() {
@@ -87,6 +88,7 @@ void Server::sendToAll(int senderFd, char * buffer, int count){
         } else {
             buffer[2] = 'N'; //nie powinien dostać punktu
         }
+        cout << "Sending..." << endl;
         res = write(clientFd, buffer, count);
         if(res!=count)
             bad.insert(clientFd);
@@ -120,18 +122,22 @@ void Server::readMessage(int clientFd){
                 sendToAll(clientFd, bufferToSend, 3);
                 flag = true;
             } else if(buffer[0] == '1') { //Prośba o dołączenie do gry
+                cout << "prośba o dołączenie do gry" << endl;
                 bufferToSend[0] = '6';
                 bufferToSend[1] = '0';
                 sendToAll(clientFd, bufferToSend, 3);
                 flag = true;
             }
-            /*while(i < word.size()){
-                if (word[i] == buffer[0]);
-                bufferToSend[0] = buffer[0];
-                bufferToSend[1] = i; //i jako char więc trzeba potem konwertować na inta jako index litery w haśle
-                sendToAll(clientFd, bufferToSend, 3);
-                flag = true;
-            }*/
+            while(i < word.size()){
+                if (word[i] == buffer[0]){
+                   bufferToSend[0] = buffer[0];
+                   bufferToSend[1] = i; //i jako char więc trzeba potem konwertować na inta jako index litery w haśle
+                   cout << "punkt w miejscu: " << i << endl;
+                   sendToAll(clientFd, bufferToSend, 3);
+                   flag = true;
+                }
+                i++;
+            }
         }
         if(!flag){
             bufferToSend[2] = '7'; //nie było wystąpienia litery - punkt karny

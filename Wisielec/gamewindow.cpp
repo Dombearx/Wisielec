@@ -17,6 +17,10 @@ GameWindow::GameWindow(QString host, int port, bool ser, QWidget *parent) :
     ServerPort = port;
     if(s) this_thread::sleep_for(chrono::milliseconds(1000));
 
+    // ----------------------
+    startGame(); //Do testów gry singlowej
+    // ----------------------
+
     connectToServer();
 }
 
@@ -55,15 +59,21 @@ void GameWindow::socketConnected() {
 }
 
 void GameWindow::readFromServer() {
-    QByteArray date = sock->read(512);
-    if(date[0] == '1')
+    cout << "reading" << endl;
+    QByteArray data = sock->read(512);
+    if(data[0] == '1')
         startGame();
-    else if(date[0] == '2' || date[0] == '3' || date[0] == '4' || date[0] == '5')
-        newRound(date);
-    else if(date[0] == '6')
+    else if(data[0] == '2' || data[0] == '3' || data[0] == '4' || data[0] == '5')
+        newRound(data);
+    else if(data[0] == '6')
         inGame();
-    else if(date[0] >= 'A' && date[0] <= 'Z')
-        cout << date[0] << endl;
+    else if(data[0] >= 'A' && data[0] <= 'Z'){
+        cout << "data0: " << data[0] << endl;
+        cout << "data1: " << (int) data[1] << endl;
+        QString newText = ui->textEdit->toPlainText();
+        newText[(int)data[1]] = data[0];
+        ui->textEdit->setText(newText);
+    }
 }
 
 void GameWindow::sendToServer(char c) {
@@ -76,7 +86,7 @@ void GameWindow::startGame() {
     ui->textEdit->setEnabled(true);
     ui->letterEdit->setEnabled(true);
     ui->letterBtn->setEnabled(true);
-    ui->textEdit->setText("Podaj litere");
+    ui->textEdit->setText("______");
     ui->label->setText("Runda 1");
 }
 
@@ -93,4 +103,10 @@ void GameWindow::inGame() {
 
 void GameWindow::destroyWindow() {
     this->destroy(true,true);
+}
+
+void GameWindow::on_letterBtn_clicked()
+{
+    char *letter = ((QByteArray) ui->letterEdit->text().toLocal8Bit()).data();
+    sendToServer(letter[0]);
 }

@@ -47,6 +47,9 @@ protected:
     void inGame();
 
 
+private slots:
+    void on_letterBtn_clicked();
+
 private:
     Ui::GameWindow *ui;
     QString ServerHost;
