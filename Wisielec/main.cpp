@@ -8,10 +8,7 @@ int main(int argc, char *argv[])
     MainWindow* w = new MainWindow();
     w->show();
 
-    cout << "NO ELO" << endl;
-
     std::thread(&MainWindow::waitForServer, w).detach();
-    //std::thread tserver(&MainWindow::waitForServer, w);
 
     return a.exec();
 }
