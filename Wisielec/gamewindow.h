@@ -19,7 +19,6 @@
 #include <string>
 #include <ctype.h>
 
-
 #include <QWidget>
 #include <QTcpSocket>
 #include <QTimer>
@@ -27,6 +26,7 @@
 #include <QObject>
 #include <QProcess>
 #include <QDateTime>
+#include <QGraphicsPixmapItem>
 
 using namespace std;
 
@@ -65,12 +65,15 @@ protected:
     void newRound(QString word);
     void inGame(char c);
     void updateWord(QString word);
+    void updateLives(char c);
+    void showPicture(int nr);
     void endGame();
 
 private slots:
     void on_letterBtn_clicked();
 
 private:
+    QVector<QGraphicsScene*> scenes;
     Ui::GameWindow *ui;
     int desc;
     QString ServerHost;

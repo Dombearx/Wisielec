@@ -16,6 +16,23 @@ GameWindow::GameWindow(QString host, int port, bool ser, QWidget *parent) :
     ServerPort = port;
     hostServer = host.toStdString();
     portServer = port;
+
+    for(int i = 0; i < 13; i++) {
+        QString name = "./pictures/";
+        name.append(QString::number(13-i));
+        QImage image(name);
+
+        if(image.isNull())
+        {
+            QMessageBox::information(this,"Image Viewer","Error Displaying image");
+            return;
+        }
+
+        QGraphicsScene* scene = new QGraphicsScene();
+        QGraphicsPixmapItem* item = new QGraphicsPixmapItem(QPixmap::fromImage(image));
+        scene->addItem(item);
+        scenes.push_back(scene);
+    }
     if(s) this_thread::sleep_for(chrono::milliseconds(1000));
 
     connectToServer();
@@ -56,8 +73,6 @@ void GameWindow::socketConnected() {
 
 void GameWindow::readFromServer() {
     QByteArray date = sock->read(512);
-        cout << date[0] << endl;
-
     if(date[0] == '0' && !end) {
         QMessageBox::critical(this, "Błąd", "Brak połączenia");
         this->~GameWindow();
@@ -75,8 +90,8 @@ void GameWindow::readFromServer() {
         ui->letterEdit->setText(c);
     } else if(date[0] == '9') {
         endGame();
-    } else if(date[0] >= 'A' && date[0] <= 'Z')
-        cout << date[0] << endl;
+    } else if(date[0] == '+')
+        updateLives(date[1]);
 }
 
 void GameWindow::sendToServer(char c) {
@@ -91,6 +106,7 @@ void GameWindow::startGame(QString word) {
     ui->letterBtn->setEnabled(true);
     updateWord(word.remove(0, 1));
     ui->label->setText("Runda 1");
+    showPicture(12);
 }
 
 void GameWindow::newRound(QString word) {
@@ -101,6 +117,7 @@ void GameWindow::newRound(QString word) {
     ui->letterBtn->setEnabled(true);
     ui->label->setText(round);
     updateWord(word.remove(0, 1));
+    showPicture(12);
 }
 
 void GameWindow::inGame(char c) {
@@ -130,6 +147,17 @@ void GameWindow::updateWord(QString word) {
                           </style></head><body style=\" font-family:'Cantarell'; font-size:11pt; font-weight:400; font-style:normal;\">\
                           <p align=\"center\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:'MS Shell Dlg 2';\
                           font-size:20pt;\">"+wordShow+"</span></p></body></html>");
+}
+
+void GameWindow::updateLives(char c) {
+    int lives = c;
+    cout << lives << endl;
+    if(lives == 0) ui->letterBtn->setEnabled(false);
+    showPicture(lives);
+}
+
+void GameWindow::showPicture(int nr) {
+    ui->graphicsView->setScene(scenes.at(nr));
 }
 
 void GameWindow::endGame() {

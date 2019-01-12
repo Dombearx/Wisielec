@@ -4,7 +4,11 @@ Player::Player(int fd, string n, int nr, int r) {
     playerFd = fd;
     name = n;
     number = nr;
-    int live[5] = {9, 9, 9, 9, 9};
+    live[0] = 12;
+    live[1] = 12;
+    live[2] = 12;
+    live[3] = 12;
+    live[4] = 12;
     points = 0;
     endRound = false;
     connected = true;
@@ -21,7 +25,7 @@ void Player::add(int p) {
 
 void Player::hangPoint(int round) {
     if(live[round-1] > 0)
-        live[round-1] = live[round - 1];
+        live[round-1] = live[round-1] - 1;
     if(live[round-1] == 0)
         endRound = true;
 }

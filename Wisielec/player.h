@@ -19,7 +19,7 @@ public:
     int getPoint() {return points;}
     void connect() {connected = true;}
     void disconnect() {connected = false;}
-    int getLives(int round) {return live[round];}
+    int getLives(int round) {return live[round-1];}
     bool hasLives() {return !endRound;}
     bool isConnected() {return connected;}
     void newRound(int r);

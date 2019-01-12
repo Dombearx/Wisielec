@@ -128,29 +128,23 @@ void Server::readMessage(int clientFd, int nr) {
         // read a message
         char buffer[1] = "";
         char bufferToSend[3] = "";
-        char bufferToSend2[4] = "";
         ssize_t count = read(clientFd, buffer, 1);
-        cout << buffer[0] << " i count " << count << endl;
-        bool flag = false;
         if (count < 1) {
             printf("removing %d\n", clientFd);
             clientFds.erase(clientFd);
             close(clientFd);
             continue;
         } else {
-            //unsigned int i = 0;
             if(buffer[0] == '0') { //Zamknięcie serwera
                 end = true;
                 bufferToSend[0] = buffer[0];
                 bufferToSend[1] = '0';
                 sendToAll(bufferToSend, 3);
                 this->~Server();
-                flag = true;
             } else if(buffer[0] == '1') { //Prośba o dołączenie do gry
                 bufferToSend[0] = '6';
                 bufferToSend[1] = nr;
                 write(clientFd, bufferToSend, 3);
-                flag = true;
             } else if(buffer[0] == '2') { //Czekanie na rozpoczęcie gry
                 while(!ready) {this_thread::sleep_for(chrono::milliseconds(1000));}
                 char buff[word[round-1].size()+1];
@@ -158,7 +152,6 @@ void Server::readMessage(int clientFd, int nr) {
                 for(int i = 0; i < word[round-1].size(); i++)
                     buff[i+1] = actualWord[i];
                 write(clientFd, buff, word[round-1].size()+1);
-                flag = true;
             } else if(buffer[0] >= 'A' && buffer[0] <= 'Z' && !wait) {
                 int score = updateWord(buffer[0]);
                 if(score > 0) {
@@ -168,21 +161,20 @@ void Server::readMessage(int clientFd, int nr) {
                         buff[i+1] = actualWord[i];
                     sendToAll(buff, word[round-1].size()+1);
                     if(checkWord()) nextRound();
-                } else {
-                    //Zrobic aktualizacje pkt i wyslanie tabeli
-                    players.at(nr-1)->hangPoint(round);
-                    bufferToSend[0] = 10;
+                } else { //Jeśli gracz popełni błąd
+                    players.at(nr-1)->hangPoint(round); //Odjęcie życia w rundzie
+                    bufferToSend[0] = '+';
                     bufferToSend[1] = players.at(nr-1)->getLives(round);
                     write(clientFd, bufferToSend, 3);
+                    bool next = true; //Sprawdzenie wszystkich aktywnych graczy, czy mają jeszcze życia
+                    for(Player* player: players)
+                        if(player->isConnected())
+                            if(player->hasLives()) next = false;
+                    if(next) nextRound(); //Zainicjowanie następnej rundy, jeśli wszyscy są w dupie
                 }
                 this_thread::sleep_for(chrono::milliseconds(30));
-                write(clientFd, "8", 1); //Prośba o wyczyszczenie textEdita
-                flag = true;
+                write(clientFd, "8", 1); //Prośba o wyczyszczenie pola do wypisywania liter
             }
-        }
-        if(!flag){
-            bufferToSend[2] = '7'; //nie było wystąpienia litery - punkt karny
-            int res = write(clientFd, bufferToSend, 3);
         }
     }
 }
@@ -190,7 +182,7 @@ void Server::readMessage(int clientFd, int nr) {
 void Server::nextRound() {
     round++;
     wait = true;
-    std::thread t(chrono::milliseconds(2500));
+    std::this_thread::sleep_for(chrono::milliseconds(2500));
     if(round == 6) {
         endGame();
     } else {
@@ -200,10 +192,12 @@ void Server::nextRound() {
         buff[0] = round + '0';
         for(int i = 0; i < word[round-1].size(); i++)
             buff[i+1] = actualWord[i];
+        for (Player* player: players)
+            if(player->isConnected())
+                player->newRound(round);
         sendToAll(buff, word[round-1].size()+1);
         wait = false;
     }
-    t.join();
 }
 
 void Server::endGame() {
