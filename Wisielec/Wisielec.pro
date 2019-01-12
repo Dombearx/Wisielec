@@ -5,6 +5,7 @@
 #-------------------------------------------------
 
 QT       += core gui
+QT       += network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -26,13 +27,20 @@ CONFIG += c++11
 
 SOURCES += \
         main.cpp \
-        mainwindow.cpp
+        mainwindow.cpp \
+    gamewindow.cpp \
+    server.cpp \
+    player.cpp
 
 HEADERS += \
-        mainwindow.h
+        mainwindow.h \
+    gamewindow.h \
+    server.h \
+    player.h
 
 FORMS += \
-        mainwindow.ui
+        mainwindow.ui \
+    gamewindow.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
