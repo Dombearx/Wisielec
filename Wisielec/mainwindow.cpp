@@ -44,6 +44,7 @@ void MainWindow::waitForServer() {
     while(!this->finish) {
         if(i < serverCount) {
             Server* server = new Server(ports.at(i));
+            servers.append(server);
             std::thread(&Server::run, server).detach();
             i=i+1;
         }
