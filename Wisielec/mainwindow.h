@@ -38,6 +38,7 @@ private:
     bool finish;
     int serverCount;
     QList<char*> ports;
+    QList<Server*> servers;
 };
 
 #endif // MAINWINDOW_H

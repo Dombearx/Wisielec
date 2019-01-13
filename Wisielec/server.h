@@ -18,6 +18,10 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <string.h>
+#include <vector>
+
+#include "player.h"
 
 using namespace std;
 
@@ -31,15 +35,33 @@ public:
     void sendToAllBut(int fd, char * buffer, int count);
     uint16_t readPort(char * txt);
     void setReuseAddr(int sock);
-    void sendToAll(int fd, char * buffer, int count);
-    void readMessage(int fd);
+    void sendToOne(int clientFd, char* txt, int l);
+    void sendToAll(char* txt, int l);
+    void readMessage(int fd, int nr);
     void closeServer();
+    void connectPlayerToServer(int fd);
+    void waitForPlayers();
+    int updateWord(char c);
+    bool checkWord();
+    void nextRound();
+    void endGame();
+
+    string intToString(int n);
 private:
     char * prt;
-    int servFd;
+    int serverFd;
     unordered_set<int> clientFds;
-    string word;
-    bool endGame;
+    int clientServFd;
+    int playersNumber;
+    int round;
+
+    string word[5] = {"JEBACJEBACZ", "STUDIA", "NADCHODZI", "SESJA", "WARUNY"};
+    char actualWord[255];
+    bool ready;
+    bool end;
+    bool wait;
+
+    vector<Player*> players;
 };
 
 
