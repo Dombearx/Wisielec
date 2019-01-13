@@ -35,10 +35,6 @@ GameWindow::GameWindow(QString host, int port, bool ser, QWidget *parent) :
     }
     if(s) this_thread::sleep_for(chrono::milliseconds(1000));
 
-    // ----------------------
-    startGame(); //Do testów gry singlowej
-    // ----------------------
-
     connectToServer();
 }
 
@@ -94,8 +90,19 @@ void GameWindow::readFromServer() {
         ui->letterEdit->setText(c);
     } else if(date[0] == '9') {
         endGame();
-    } else if(date[0] == '+')
+    } else if(date[0] == '+'){
         updateLives(date[1]);
+    } else if(date[0] == 'p'){
+        updatePoints(date[1]);
+    }
+}
+
+void GameWindow::updatePoints(char c) {
+    int points = (int) c;
+    cout << points << endl;
+    string s = to_string(points);
+    QString qs = QString::fromStdString(s);
+    this->ui->pointsView->setText(qs);
 }
 
 void GameWindow::sendToServer(char c) {
@@ -181,10 +188,4 @@ void GameWindow::on_letterBtn_clicked()
 
 void GameWindow::destroyWindow() {
     this->destroy(true,true);
-}
-
-void GameWindow::on_letterBtn_clicked()
-{
-    char *letter = ((QByteArray) ui->letterEdit->text().toLocal8Bit()).data();
-    sendToServer(letter[0]);
 }

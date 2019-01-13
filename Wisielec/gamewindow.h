@@ -66,11 +66,9 @@ protected:
     void inGame(char c);
     void updateWord(QString word);
     void updateLives(char c);
+    void updatePoints(char c);
     void showPicture(int nr);
     void endGame();
-
-private slots:
-    void on_letterBtn_clicked();
 
 private slots:
     void on_letterBtn_clicked();
