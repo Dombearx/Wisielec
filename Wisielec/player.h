@@ -23,6 +23,8 @@ public:
     bool hasLives() {return !endRound;}
     bool isConnected() {return connected;}
     void newRound(int r);
+    int getPoints() {return points;}
+    bool operator<(const Player& str);
 private:
     int playerFd;
     int number;

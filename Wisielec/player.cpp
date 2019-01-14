@@ -35,3 +35,9 @@ void Player::newRound(int r) {
     round = r;
     endRound = false;
 }
+
+bool Player::operator < (const Player& str)
+{
+    return (points < str.points);
+}
+

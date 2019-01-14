@@ -1,5 +1,5 @@
 #include "server.h"
-
+#include <algorithm>
 using namespace std;
 
 Server::Server(char * p) {
@@ -15,6 +15,8 @@ Server::Server(char * p) {
 Server::~Server() {
     closeServer();
 }
+
+
 
 void Server::run() {
     cout << prt << endl;
@@ -142,6 +144,7 @@ void Server::readMessage(int clientFd, int nr) {
                 sendToAll(bufferToSend, 3);
                 this->~Server();
             } else if(buffer[0] == '1') { //Prośba o dołączenie do gry
+                cout << "prośba o dołączenie do gry" << endl;
                 bufferToSend[0] = '6';
                 bufferToSend[1] = nr;
                 write(clientFd, bufferToSend, 3);
@@ -159,7 +162,15 @@ void Server::readMessage(int clientFd, int nr) {
                     buff[0] = '7';
                     for(int i = 0; i < word[round-1].size(); i++)
                         buff[i+1] = actualWord[i];
+
+                    players.at(nr-1)->add(score); //Dodanie punktów graczowi
+                    bufferToSend[0] = 'p';
+                    bufferToSend[1] = (char) score;
+                    std::sort(players.begin(), players.end()); //Sortowanie graczy według punktów
+
                     sendToAll(buff, word[round-1].size()+1);
+
+                    //write(clientFd, bufferToSend, 3);
                     if(checkWord()) nextRound();
                 } else { //Jeśli gracz popełni błąd
                     players.at(nr-1)->hangPoint(round); //Odjęcie życia w rundzie

@@ -90,8 +90,19 @@ void GameWindow::readFromServer() {
         ui->letterEdit->setText(c);
     } else if(date[0] == '9') {
         endGame();
-    } else if(date[0] == '+')
+    } else if(date[0] == '+'){
         updateLives(date[1]);
+    } else if(date[0] == 'p'){
+        updatePoints(date[1]);
+    }
+}
+
+void GameWindow::updatePoints(char c) {
+    int points = (int) c;
+    cout << points << endl;
+    string s = to_string(points);
+    QString qs = QString::fromStdString(s);
+    this->ui->pointsView->setText(qs);
 }
 
 void GameWindow::sendToServer(char c) {

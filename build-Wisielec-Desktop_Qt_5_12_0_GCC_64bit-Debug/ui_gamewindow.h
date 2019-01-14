@@ -28,12 +28,14 @@ public:
     QTextEdit *textEdit;
     QLabel *label;
     QGraphicsView *graphicsView;
-    QTableView *tableView;
+    QTableView *rankingView;
     QLineEdit *userEdit;
     QLabel *label_2;
     QLineEdit *letterEdit;
     QPushButton *letterBtn;
     QLabel *label_3;
+    QLabel *label_4;
+    QLineEdit *pointsView;
 
     void setupUi(QWidget *GameWindow)
     {
@@ -54,9 +56,9 @@ public:
         graphicsView->setObjectName(QString::fromUtf8("graphicsView"));
         graphicsView->setGeometry(QRect(300, 50, 171, 171));
         graphicsView->setResizeAnchor(QGraphicsView::NoAnchor);
-        tableView = new QTableView(GameWindow);
-        tableView->setObjectName(QString::fromUtf8("tableView"));
-        tableView->setGeometry(QRect(10, 230, 461, 141));
+        rankingView = new QTableView(GameWindow);
+        rankingView->setObjectName(QString::fromUtf8("rankingView"));
+        rankingView->setGeometry(QRect(10, 230, 461, 141));
         userEdit = new QLineEdit(GameWindow);
         userEdit->setObjectName(QString::fromUtf8("userEdit"));
         userEdit->setGeometry(QRect(300, 20, 171, 20));
@@ -74,7 +76,13 @@ public:
         letterBtn->setGeometry(QRect(70, 130, 221, 31));
         label_3 = new QLabel(GameWindow);
         label_3->setObjectName(QString::fromUtf8("label_3"));
-        label_3->setGeometry(QRect(10, 195, 111, 21));
+        label_3->setGeometry(QRect(10, 210, 111, 21));
+        label_4 = new QLabel(GameWindow);
+        label_4->setObjectName(QString::fromUtf8("label_4"));
+        label_4->setGeometry(QRect(10, 180, 67, 17));
+        pointsView = new QLineEdit(GameWindow);
+        pointsView->setObjectName(QString::fromUtf8("pointsView"));
+        pointsView->setGeometry(QRect(70, 180, 113, 25));
 
         retranslateUi(GameWindow);
 
@@ -87,14 +95,16 @@ public:
         textEdit->setHtml(QApplication::translate("GameWindow", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
 "p, li { white-space: pre-wrap; }\n"
-"</style></head><body style=\" font-family:'Cantarell'; font-size:11pt; font-weight:400; font-style:normal;\">\n"
-"<p align=\"center\" style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><br /></p></body></html>", nullptr));
+"</style></head><body style=\" font-family:'Ubuntu'; font-size:11pt; font-weight:400; font-style:normal;\">\n"
+"<p align=\"center\" style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Cantarell';\"><br /></p></body></html>", nullptr));
         label->setText(QApplication::translate("GameWindow", "<html><head/><body><p>\305\201\304\205czenie z serwerem</p></body></html>", nullptr));
         userEdit->setText(QApplication::translate("GameWindow", "player", nullptr));
         label_2->setText(QApplication::translate("GameWindow", "Nazwa gracza", nullptr));
         letterEdit->setText(QString());
         letterBtn->setText(QApplication::translate("GameWindow", "Podaj liter\304\231", nullptr));
         label_3->setText(QApplication::translate("GameWindow", "Ranking", nullptr));
+        label_4->setText(QApplication::translate("GameWindow", "Punkty", nullptr));
+        pointsView->setText(QApplication::translate("GameWindow", "0", nullptr));
     } // retranslateUi
 
 };

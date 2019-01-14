@@ -66,6 +66,7 @@ protected:
     void inGame(char c);
     void updateWord(QString word);
     void updateLives(char c);
+    void updatePoints(char c);
     void showPicture(int nr);
     void endGame();
 
