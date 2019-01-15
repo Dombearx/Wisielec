@@ -12,6 +12,15 @@ GameWindow::GameWindow(QString host, int port, bool ser, QWidget *parent) :
     end = false;
     s = ser;
     ui->setupUi(this);
+    rankingModel = new QStandardItemModel(ui->rankingView);
+    ui->rankingView->setModel(rankingModel);
+    rankingModel->setColumnCount(2);
+    rankingModel->setHorizontalHeaderLabels({"Gracz", "Punkty"});
+    ui->rankingView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
+    ui->rankingView->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->rankingView->setSelectionMode(QAbstractItemView::SingleSelection);
+
     ServerHost = host;
     ServerPort = port;
     hostServer = host.toStdString();
@@ -92,17 +101,41 @@ void GameWindow::readFromServer() {
         endGame();
     } else if(date[0] == '+'){
         updateLives(date[1]);
-    } else if(date[0] == 'p'){
-        updatePoints(date[1]);
     }
 }
 
-void GameWindow::updatePoints(char c) {
-    int points = (int) c;
-    cout << points << endl;
-    string s = to_string(points);
-    QString qs = QString::fromStdString(s);
-    this->ui->pointsView->setText(qs);
+void GameWindow::updatePoints(QString text) {
+    cout << text.toStdString() << endl;
+    int i = 0;
+    QBrush brushBackground(Qt::blue);
+    rankingModel->setRowCount(0);
+    rankingModel->setRowCount(text.size()/2);
+    int temp[text.size()];
+    for(int i = 0; i < text.size(); i++) {
+        temp[i] = text.at(i).toLatin1();
+    }
+    while(i < text.size()) {
+        int player = temp[2*i];
+        int points = temp[2*i+1];
+        if(player == playerNr) {
+            string s = to_string(points);
+            QString qs = QString::fromStdString(s);
+            this->ui->pointsView->setText(qs);
+        }
+        //rankingView
+        QString name = "player";
+        if(player < 10) name.append("0");
+        name.append(QString::number(player));
+        QStandardItem *itemPlayer = new QStandardItem(name);
+        itemPlayer->setData(QVariant::fromValue(Qt::blue), Qt::BackgroundRole);
+        itemPlayer->setData(QVariant::fromValue(Qt::white), Qt::ForegroundRole);
+        rankingModel->setItem(i/2, 0, itemPlayer);
+
+        QStandardItem *itemPoints = new QStandardItem(QString::number(points));
+        rankingModel->setItem(i/2, 1, itemPoints);
+
+        i += 2;
+    }
 }
 
 void GameWindow::sendToServer(char c) {
@@ -134,7 +167,7 @@ void GameWindow::newRound(QString word) {
 void GameWindow::inGame(char c) {
     ui->label->setText("Połączono. Oczekiwanie na graczy.");
     int nr = c;
-    cout << "player" << nr << endl;
+    playerNr = nr;
     if(nr > 9) {
         QString name = "player";
         name.append(QString::number(c));
@@ -148,21 +181,24 @@ void GameWindow::inGame(char c) {
 
 void GameWindow::updateWord(QString word) {
     QString wordShow = "";
-    for(int i = 0; i < word.size() - 1; i++) {
+    int i = 0;
+    while(word.at(i+1) != '-' || i+1 == word.size()) {
         wordShow.append(word.at(i));
         wordShow.append(" ");
+        i++;
     }
-    wordShow.append(word.at(word.size()-1));
+    wordShow.append(word.at(i));
     ui->textEdit->setHtml("<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\
                           p, li { white-space: pre-wrap; }\
                           </style></head><body style=\" font-family:'Cantarell'; font-size:11pt; font-weight:400; font-style:normal;\">\
                           <p align=\"center\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:'MS Shell Dlg 2';\
                           font-size:20pt;\">"+wordShow+"</span></p></body></html>");
+    if(word != "Koniec gry")
+        updatePoints(word.remove(0, i+2));
 }
 
 void GameWindow::updateLives(char c) {
     int lives = c;
-    cout << lives << endl;
     if(lives == 0) ui->letterBtn->setEnabled(false);
     showPicture(lives);
 }
@@ -172,7 +208,7 @@ void GameWindow::showPicture(int nr) {
 }
 
 void GameWindow::endGame() {
-    updateWord(" Koniec gry");
+    updateWord("Koniec gry");
     const QString c = "";
     ui->letterBtn->setEnabled(false);
     ui->letterEdit->setText(c);

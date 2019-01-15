@@ -19,7 +19,7 @@ Player::~Player() {
 
 }
 
-void Player::add(int p) {
+void Player::addPoints(int p) {
     points += p;
 }
 
@@ -36,8 +36,20 @@ void Player::newRound(int r) {
     endRound = false;
 }
 
-bool Player::operator < (const Player& str)
-{
-    return (points < str.points);
+bool Player::operator > (Player* player) {
+    if(points == player->points ) {
+        if(connected && !player->connected) return true;
+        else if(!connected && player->connected) return false;
+        else {
+            int sumlive1 = 0, sumlive2 = 0;
+            for(int i = 0; i < 5; i++) {
+                sumlive1 += live[i];
+                sumlive2 += player->live[i];
+            }
+            if(sumlive1 > sumlive2) return true;
+            else return false;
+        }
+    } else {
+        return (points > player->points);
+    }
 }
-

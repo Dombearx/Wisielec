@@ -70,7 +70,9 @@ void Server::connectPlayerToServer(int servFd) {
         name.append("0");
         name.append(intToString(playersNumber));
     } else name.append(intToString(playersNumber));
-    players.push_back(new Player(clientFd, name, playersNumber, round - 1));
+    Player* player = new Player(clientFd, name, playersNumber, round - 1);
+    players.push_back(player);
+    sorted.push_back(player);
 
     std::thread(&Server::readMessage, this, clientFd, playersNumber).detach();
 }
@@ -144,33 +146,49 @@ void Server::readMessage(int clientFd, int nr) {
                 sendToAll(bufferToSend, 3);
                 this->~Server();
             } else if(buffer[0] == '1') { //Prośba o dołączenie do gry
-                cout << "prośba o dołączenie do gry" << endl;
                 bufferToSend[0] = '6';
                 bufferToSend[1] = nr;
                 write(clientFd, bufferToSend, 3);
             } else if(buffer[0] == '2') { //Czekanie na rozpoczęcie gry
                 while(!ready) {this_thread::sleep_for(chrono::milliseconds(1000));}
-                char buff[word[round-1].size()+1];
+                sortPlayers();
+
+                char buff[word[round-1].size()+3+sorted.size()];
                 buff[0] = '1';
                 for(int i = 0; i < word[round-1].size(); i++)
                     buff[i+1] = actualWord[i];
-                write(clientFd, buff, word[round-1].size()+1);
+                buff[word[round-1].size()+1] = '-';
+                int i = 0;
+                while(i < sorted.size()) {
+                    buff[2*i+word[round-1].size()+2] = sorted.at(i)->getNumber();
+                    buff[2*i+word[round-1].size()+3] = sorted.at(i)->getPoints();
+                    i++;
+                }
+
+                cout << buff << endl;
+                write(clientFd, buff, word[round-1].size()+sorted.size()+3);
             } else if(buffer[0] >= 'A' && buffer[0] <= 'Z' && !wait) {
                 int score = updateWord(buffer[0]);
                 if(score > 0) {
-                    char buff[word[round-1].size()+1];
+                    players.at(nr-1)->addPoints(score);
+                    sortPlayers();
+
+                    char buff[word[round-1].size()+3+sorted.size()];
                     buff[0] = '7';
                     for(int i = 0; i < word[round-1].size(); i++)
                         buff[i+1] = actualWord[i];
+                    buff[word[round-1].size()+1] = '-';
+                    int i = 0;
+                    while(i < sorted.size()) {
+                        buff[2*i+word[round-1].size()+2] = sorted.at(i)->getNumber();
+                        buff[2*i+word[round-1].size()+3] = sorted.at(i)->getPoints();
+                        i++;
+                    }
 
-                    players.at(nr-1)->add(score); //Dodanie punktów graczowi
-                    bufferToSend[0] = 'p';
-                    bufferToSend[1] = (char) score;
-                    std::sort(players.begin(), players.end()); //Sortowanie graczy według punktów
+                    cout << buff << endl;
+                    sendToAll(buff, word[round-1].size()+sorted.size()+3);
+                    //sortPlayers();
 
-                    sendToAll(buff, word[round-1].size()+1);
-
-                    //write(clientFd, bufferToSend, 3);
                     if(checkWord()) nextRound();
                 } else { //Jeśli gracz popełni błąd
                     players.at(nr-1)->hangPoint(round); //Odjęcie życia w rundzie
@@ -183,7 +201,7 @@ void Server::readMessage(int clientFd, int nr) {
                             if(player->hasLives()) next = false;
                     if(next) nextRound(); //Zainicjowanie następnej rundy, jeśli wszyscy są w dupie
                 }
-                this_thread::sleep_for(chrono::milliseconds(30));
+                this_thread::sleep_for(chrono::milliseconds(60));
                 write(clientFd, "8", 1); //Prośba o wyczyszczenie pola do wypisywania liter
             }
         }
@@ -199,14 +217,20 @@ void Server::nextRound() {
     } else {
         for(int i = 0; i < word[round-1].size(); i++)
             actualWord[i] = '_';
-        char buff[word[round-1].size()+1];
+        for (Player* player: players)
+            player->newRound(round);
+        char buff[word[round-1].size()+3+sorted.size()];
         buff[0] = round + '0';
         for(int i = 0; i < word[round-1].size(); i++)
             buff[i+1] = actualWord[i];
-        for (Player* player: players)
-            if(player->isConnected())
-                player->newRound(round);
-        sendToAll(buff, word[round-1].size()+1);
+        buff[word[round-1].size()+1] = '-';
+        int i = 0;
+        while(i < sorted.size()) {
+            buff[2*i+word[round-1].size()+2] = sorted.at(i)->getNumber();
+            buff[2*i+word[round-1].size()+3] = sorted.at(i)->getPoints();
+            i++;
+        }
+        sendToAll(buff, word[round-1].size()+sorted.size()+3);
         wait = false;
     }
 }
@@ -231,6 +255,49 @@ bool Server::checkWord() { //Sprawdza czy mamy koniec rundy
     for(int i = 0; i < word[round-1].size(); i++)
         if(actualWord[i] == '_') return 0;
     return 1;
+}
+
+void Server::sortPlayers() {
+    /*for(int i = 0; i < sorted.size(); i++) {
+        for(int j = 0; j < sorted.size()-1; j++) {
+            if(comp(sorted.at(j), sorted.at(j+1))) swap(sorted.at(j), sorted.at(j+1));
+        }
+    }*/
+    sort(sorted.begin(), sorted.end(), [](Player* a, Player*b) {return a > b;});
+}
+
+
+bool Server::comp(Player* p1, Player* p2) {
+    if(p1->getPoints() == p2->getPoints() ) {
+        if(p1->isConnected() && !p2->isConnected()) return true;
+        else if(!p1->isConnected() && p2->isConnected()) return false;
+        else {
+            int sumlive1 = 0, sumlive2 = 0;
+            for(int i = 0; i < 5; i++) {
+                sumlive1 += p1->getLives(i+1);
+                sumlive2 += p2->getLives(i+1);
+            }
+            if(sumlive1 > sumlive2) return true;
+            else return false;
+        }
+    } else {
+        return (p1->getPoints() > p2->getPoints());
+    }
+}
+
+
+void Server::updateRanking(int fd, bool all) {
+    char buff2[2*sorted.size()+3];
+    buff2[0] = 'p';
+    buff2[1] = sorted.size();
+    int i = 2;
+    while(i < 2*sorted.size()+2) {
+        buff2[i] = sorted.at((i-2)/2)->getNumber();
+        buff2[i+1] = sorted.at((i-2)/2)->getPoints();
+        i += 2;
+    }
+    if(all) sendToAll(buff2, 2*sorted.size()+3);
+    else write(fd, buff2, 2*sorted.size()+3);
 }
 
 string Server::intToString(int n) {

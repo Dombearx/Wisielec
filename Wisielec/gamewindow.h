@@ -27,6 +27,9 @@
 #include <QProcess>
 #include <QDateTime>
 #include <QGraphicsPixmapItem>
+#include <QStandardItemModel>
+#include <QBrush>
+
 
 using namespace std;
 
@@ -66,7 +69,7 @@ protected:
     void inGame(char c);
     void updateWord(QString word);
     void updateLives(char c);
-    void updatePoints(char c);
+    void updatePoints(QString word);
     void showPicture(int nr);
     void endGame();
 
@@ -74,6 +77,7 @@ private slots:
     void on_letterBtn_clicked();
 
 private:
+    QStandardItemModel *rankingModel;
     QVector<QGraphicsScene*> scenes;
     Ui::GameWindow *ui;
     int desc;
@@ -82,6 +86,7 @@ private:
     string hostServer;
     int portServer;
     int serverFd;
+    int playerNr;
     bool s; //Zmienna informujaca czy dany klient jest odpowiedzialny za stworzenie serwera dla gry w ktorej uczestniczy
     bool end;
 };

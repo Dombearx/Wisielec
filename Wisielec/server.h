@@ -20,6 +20,7 @@
 #include <sstream>
 #include <string.h>
 #include <vector>
+#include <algorithm>
 
 #include "player.h"
 
@@ -43,9 +44,12 @@ public:
     void waitForPlayers();
     int updateWord(char c);
     bool checkWord();
+    void sortPlayers();
     void nextRound();
+    void updateRanking(int fd, bool all);
     void endGame();
 
+    bool comp(Player* p1, Player* p2);
     string intToString(int n);
 private:
     char * prt;
@@ -61,7 +65,8 @@ private:
     bool end;
     bool wait;
 
-    vector<Player*> players;
+    vector<Player*> players; //Wektor graczy
+    vector<Player*> sorted; //Posortowany wektor graczy, będący ich rankingiem
 };
 
 
