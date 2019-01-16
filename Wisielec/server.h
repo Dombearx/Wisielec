@@ -43,13 +43,11 @@ public:
     void connectPlayerToServer(int fd);
     void waitForPlayers();
     int updateWord(char c);
+    void sendWord(char c, int fd, bool all);
     bool checkWord();
     void sortPlayers();
     void nextRound();
-    void updateRanking(int fd, bool all);
     void endGame();
-
-    bool comp(Player* p1, Player* p2);
     string intToString(int n);
 private:
     char * prt;
