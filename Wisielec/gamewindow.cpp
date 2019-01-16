@@ -82,6 +82,7 @@ void GameWindow::socketConnected() {
 
 void GameWindow::readFromServer() {
     QByteArray date = sock->read(512);
+    cout << date.toStdString() << endl;
     if(date[0] == '0' && !end) {
         QMessageBox::critical(this, "Błąd", "Brak połączenia");
         this->~GameWindow();
@@ -92,49 +93,59 @@ void GameWindow::readFromServer() {
     else if(date[0] == '6') {
         inGame(date[1]);
         sendToServer('2');
-    } else if(date[0] == '7') {
+    } else if(date[0] == '7') { //Aktualizacja litery lub nowy gracz
         updateWord(date.remove(0, 1));
-    } else if(date[0] == '8') {
+    } else if(date[0] == '8') { //Wyczyszczenie pola do wpisywania liter
         const QString c = "";
         ui->letterEdit->setText(c);
     } else if(date[0] == '9') {
         endGame();
-    } else if(date[0] == '+'){
+    } else if(date[0] == '+') { //Zła litera
         updateLives(date[1]);
     }
 }
 
 void GameWindow::updatePoints(QString text) {
-    cout << text.toStdString() << endl;
-    int i = 0;
+    int p = 0;
+    for(int i = 0; i < text.size(); i++) {
+        if(text.at(i) == '-') p++;
+    }
+    p = p - 1;
+    cout << p << endl;
     QBrush brushBackground(Qt::blue);
     rankingModel->setRowCount(0);
-    rankingModel->setRowCount(text.size()/2);
-    int temp[text.size()];
-    for(int i = 0; i < text.size(); i++) {
-        temp[i] = text.at(i).toLatin1();
-    }
-    while(i < text.size()) {
-        int player = temp[2*i];
-        int points = temp[2*i+1];
-        if(player == playerNr) {
-            string s = to_string(points);
-            QString qs = QString::fromStdString(s);
-            this->ui->pointsView->setText(qs);
+    rankingModel->setRowCount(p);
+    const char* ranking = text.toStdString().c_str();
+
+    int i = 1;
+    int nr = 0;
+    while(nr < p) {
+        if(ranking[i] == '-') i++;
+        QString splayer = "";
+        splayer.append(ranking[i]);
+        QString spoints = "";
+        i++;
+        while(ranking[i] != '-') {
+            spoints.append(ranking[i]);
+            i++;
+        }
+
+        if(splayer.toInt() == playerNr) {
+            this->ui->pointsView->setText(spoints);
         }
         //rankingView
         QString name = "player";
-        if(player < 10) name.append("0");
-        name.append(QString::number(player));
+        if(splayer.toInt() < 10) name.append("0");
+        name.append(splayer);
         QStandardItem *itemPlayer = new QStandardItem(name);
         itemPlayer->setData(QVariant::fromValue(Qt::blue), Qt::BackgroundRole);
         itemPlayer->setData(QVariant::fromValue(Qt::white), Qt::ForegroundRole);
-        rankingModel->setItem(i/2, 0, itemPlayer);
+        rankingModel->setItem(nr, 0, itemPlayer);
 
-        QStandardItem *itemPoints = new QStandardItem(QString::number(points));
-        rankingModel->setItem(i/2, 1, itemPoints);
+        QStandardItem *itemPoints = new QStandardItem(spoints);
+        rankingModel->setItem(nr, 1, itemPoints);
 
-        i += 2;
+        nr++;
     }
 }
 
@@ -194,7 +205,7 @@ void GameWindow::updateWord(QString word) {
                           <p align=\"center\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:'MS Shell Dlg 2';\
                           font-size:20pt;\">"+wordShow+"</span></p></body></html>");
     if(word != "Koniec gry")
-        updatePoints(word.remove(0, i+2));
+        updatePoints(word.remove(0, i+1));
 }
 
 void GameWindow::updateLives(char c) {
