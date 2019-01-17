@@ -82,7 +82,6 @@ void GameWindow::socketConnected() {
 
 void GameWindow::readFromServer() {
     QByteArray date = sock->read(512);
-    cout << date.toStdString() << endl;
     if(date[0] == '0' && !end) {
         QMessageBox::critical(this, "Błąd", "Brak połączenia");
         this->~GameWindow();
@@ -107,10 +106,17 @@ void GameWindow::readFromServer() {
 
 void GameWindow::updatePoints(QString text) {
     int p = 0;
+    int l = 0;
     for(int i = 0; i < text.size(); i++) {
-        if(text.at(i) == '-') p++;
+        if(text.at(i) == '-') {
+            p++;
+            l = i;
+        }
     }
+    if(text.size() > l+1)
+        text.remove(l+1, text.size()-l-1);
     p = p - 1;
+    cout << text.toStdString() << endl;
     cout << p << endl;
     QBrush brushBackground(Qt::blue);
     rankingModel->setRowCount(0);
@@ -147,6 +153,7 @@ void GameWindow::updatePoints(QString text) {
 
         nr++;
     }
+    cout << "DONE" << endl;
 }
 
 void GameWindow::sendToServer(char c) {
