@@ -155,8 +155,9 @@ void Server::readMessage(int clientFd, int nr) {
                     sendWord('1', clientFd, false);
                 } else {
                     sendWord('1', clientFd, false);
-                    this_thread::sleep_for(chrono::milliseconds(20));
+                    this_thread::sleep_for(chrono::milliseconds(100));
                     sendWord('7', 0, true);
+                    cout << "DONE2" << endl;
                 }
             } else if(buffer[0] >= 'A' && buffer[0] <= 'Z' && !wait) {
                 int score = updateWord(buffer[0]);
@@ -219,8 +220,7 @@ void Server::sendWord(char c, int fd, bool all) {
     } else {
         write(fd, buff, l);
     }
-
-    cout << buff << endl;
+    std::this_thread::sleep_for(chrono::milliseconds(50));
 }
 
 void Server::nextRound() {
