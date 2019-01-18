@@ -23,30 +23,42 @@ MainWindow::~MainWindow() {
     this->destroy(true,true);
 }
 
-void MainWindow::newGameBtnHit() {
-    int port = ui->portSpinBox_2->value();
-    const char * str = ui->portSpinBox_2->text().toStdString().c_str();
-    ports.append((char*) str);
-    serverCount++;
-    GameWindow* game1 = new GameWindow("localhost", port, true);
-    game1->show();
-}
-
-void MainWindow::joinGameBtnHit() {
-    auto host = ui->hostLineEdit->text();
-    int port = ui->portSpinBox->value();
-    GameWindow* game2 = new GameWindow(host, port, false);
-    game2->show();
-}
-
 void MainWindow::waitForServer() {
     int i = 0;
-    while(!this->finish) {
+    while(!this->isHidden()) {
         if(i < serverCount) {
             Server* server = new Server(ports.at(i));
             servers.append(server);
             std::thread(&Server::run, server).detach();
             i=i+1;
         }
+        this_thread::sleep_for(chrono::milliseconds(1000));
     }
+    terminate();
+}
+
+void MainWindow::newGameBtnHit() {
+    int port = ui->portSpinBox_2->value();
+    const char * str = ui->portSpinBox_2->text().toStdString().c_str();
+    bool exist = false;
+    for(int i = 0; i < servers.size(); i++) {
+        if(servers.at(i)->getPort() == str) exist = true;
+    }
+    if(exist) {
+        QMessageBox::warning(this, "Błąd", "Port jest zajęty przez inny serwer!");
+    } else {
+        ports.append((char*) str);
+        serverCount++;
+        GameWindow* game1 = new GameWindow(this, "localhost", port, true);
+        windows.append(game1);
+        game1->show();
+    }
+}
+
+void MainWindow::joinGameBtnHit() {
+    auto host = ui->hostLineEdit->text();
+    int port = ui->portSpinBox->value();
+    GameWindow* game2 = new GameWindow(this, host, port, false);
+    windows.append(game2);
+    game2->show();
 }

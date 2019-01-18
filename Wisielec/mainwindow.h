@@ -35,9 +35,14 @@ protected:
 
 private:
     Ui::MainWindow *ui;
-    bool finish;
+
     int serverCount;
-    QList<char*> ports;
+
+    bool finish;
+
+    QVector<char*> ports;
+    QVector<Server*> servers;
+    QVector<GameWindow*> windows;
 };
 
 #endif // MAINWINDOW_H

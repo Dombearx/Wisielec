@@ -1,8 +1,33 @@
 #include "server.h"
-
+#include <algorithm>
 using namespace std;
 
 Server::Server(char * p) {
+    srand( time( NULL ) );
+    unsigned int j = 0;
+    vector<string> v;
+    ifstream ifs ("words.txt", ifstream::in);
+    string w;
+    while(ifs >> w){
+        v.push_back(w);
+        j++;
+    }
+    ifs.close();
+
+    vector<int> l;
+    for(int i = 0; i < 5; i++) {
+        bool repeat = true;
+        int liczba;
+        while(repeat) {
+            repeat = false;
+            liczba = (rand() % j);
+            for(int j = 0; j < i; j++)
+                if(l.at(j) == liczba) repeat = true;
+        }
+        l.push_back(liczba);
+        word[i] = v.at(liczba);
+    }
+
     prt = p;
     serverFd = 0;
     clientServFd = 0;
@@ -13,18 +38,15 @@ Server::Server(char * p) {
 }
 
 Server::~Server() {
-    closeServer();
+
 }
 
 void Server::run() {
-    cout << prt << endl;
     auto port = readPort(prt);
     int servFd = socket(AF_INET, SOCK_STREAM, 0);
     serverFd = servFd;
     if(servFd == -1) error(1, errno, "socket failed");
 
-    // graceful ctrl+c exit
-    //signal(SIGINT, ctrl_c);
     // prevent dead sockets from throwing pipe errors on write
     signal(SIGPIPE, SIG_IGN);
 
@@ -44,8 +66,69 @@ void Server::run() {
 
     std::thread(&Server::waitForPlayers, this).detach();
 
-    while(playersNumber < 10){
+    while(playersNumber < 10 && !end){
         connectPlayerToServer(servFd);
+    }
+}
+
+uint16_t Server::readPort(char * txt){
+    char * ptr;
+    auto port = strtol(txt, &ptr, 10);
+    if(*ptr!=0 || port<1 || (port>((1<<16)-1))) error(1,0,"illegal argument %s", txt);
+    return port;
+}
+
+void Server::setReuseAddr(int sock){
+    const int one = 1;
+    int res = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+    if(res) error(1,errno, "setsockopt failed");
+}
+
+void Server::closeServer(){
+    for(int clientFd : clientFds)
+        close(clientFd);
+    close(serverFd);
+    terminate();
+}
+
+void Server::sendToAll(char* buffer, int length){
+    ssize_t res;
+    for(int fd : clientFds){
+        res = write(fd, buffer, length);
+        if(res != length) {
+            printf("Usuwanie %d\n", fd);
+        }
+    }
+}
+
+void Server::sendToOther(int client, char* buffer, int length){
+    ssize_t res;
+    for(int fd : clientFds){
+        if(client != fd) {
+            res = write(fd, buffer, length);
+            if(res != length) {
+                printf("Usuwanie %d\n", fd);
+            }
+        }
+    }
+}
+
+void Server::waitForPlayers() {
+    this_thread::sleep_for(chrono::milliseconds(15000));
+    round = 1;
+    ready = true;
+    for(int i = 0; i < word[round-1].size(); i++)
+        actualWord[i] = '_';
+    wait = false;
+
+    while(true) {
+        char buff[2];
+        buff[0] = '*';
+        for(Player* p: players)
+            if(p->isConnected())
+                write(p->getFd(), buff, 2);
+
+        this_thread::sleep_for(chrono::milliseconds(2000));
     }
 }
 
@@ -68,146 +151,98 @@ void Server::connectPlayerToServer(int servFd) {
         name.append("0");
         name.append(intToString(playersNumber));
     } else name.append(intToString(playersNumber));
-    players.push_back(new Player(clientFd, name, playersNumber, round - 1));
+    Player* player = new Player(clientFd, name, playersNumber, round - 1);
+    players.push_back(player);
+    sorted.push_back(player);
 
     std::thread(&Server::readMessage, this, clientFd, playersNumber).detach();
 }
 
-void Server::waitForPlayers() {
-    this_thread::sleep_for(chrono::milliseconds(15000));
-    round = 1;
-    ready = true;
-    for(int i = 0; i < word[round-1].size(); i++)
-        actualWord[i] = '_';
-    wait = false;
+void Server::sortPlayers() {
+    sort(sorted.begin(), sorted.end(), [this](Player* a, Player*b) {return compare(a, b);});
 }
 
-uint16_t Server::readPort(char * txt){
-    char * ptr;
-    auto port = strtol(txt, &ptr, 10);
-    if(*ptr!=0 || port<1 || (port>((1<<16)-1))) error(1,0,"illegal argument %s", txt);
-    return port;
-}
-
-void Server::setReuseAddr(int sock){
-    const int one = 1;
-    int res = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
-    if(res) error(1,errno, "setsockopt failed");
-}
-
-void Server::closeServer(){
-    for(int clientFd : clientFds)
-        close(clientFd);
-    close(serverFd);
-    terminate();
-    printf("Server closed\n");
-}
-
-void Server::sendToOne(int fd, char* buffer, int length) {
-    ssize_t res = write(fd, buffer, length);
-    if(res != length)
-        printf("Usuwanie %d\n", fd);
-        clientFds.erase(fd);
-        close(fd);
-}
-
-void Server::sendToAll(char* buffer, int length){
-    ssize_t res;
-    for(int fd : clientFds){
-        res = write(fd, buffer, length);
-        if(res != length) {
-            printf("Usuwanie %d\n", fd);
-            clientFds.erase(fd);
-            close(fd);
+bool Server::compare(Player* p1, Player* p2) {
+    if(p1->getPoints() == p2->getPoints() ) {
+        if(p1->isConnected() && !p2->isConnected()) return true;
+        else if(!p1->isConnected() && p2->isConnected()) return false;
+        else {
+            int sumlive1 = 0, sumlive2 = 0;
+            for(int i = 0; i < 5; i++) {
+                sumlive1 += p1->getLives(i);
+                sumlive2 += p2->getLives(i);
+            }
+            if(sumlive1 > sumlive2) return true;
+            else return false;
         }
+    } else {
+        return (p1->getPoints() > p2->getPoints());
     }
 }
 
 void Server::readMessage(int clientFd, int nr) {
-    while(true) {
+    while(!end) {
         // read a message
         char buffer[1] = "";
         char bufferToSend[3] = "";
-        char bufferToSend2[4] = "";
         ssize_t count = read(clientFd, buffer, 1);
-        cout << buffer[0] << " i count " << count << endl;
-        bool flag = false;
         if (count < 1) {
-            printf("removing %d\n", clientFd);
+            count = 1;
+            buffer[1] = '0';
+        }
+
+        if(buffer[0] == '0') {
+            players.at(nr-1)->disconnect();
+            bufferToSend[0] = buffer[0];
+            bufferToSend[1] = '0';
+            if(clientServFd == clientFd) {
+                end = true;
+                sendToAll(bufferToSend, 3);
+                terminate();
+            } else {
+                write(clientFd, bufferToSend, 3);
+            }
             clientFds.erase(clientFd);
             close(clientFd);
-            continue;
-        } else {
-            //unsigned int i = 0;
-            if(buffer[0] == '0') { //Zamknięcie serwera
-                end = true;
-                bufferToSend[0] = buffer[0];
-                bufferToSend[1] = '0';
-                sendToAll(bufferToSend, 3);
-                this->~Server();
-                flag = true;
-            } else if(buffer[0] == '1') { //Prośba o dołączenie do gry
-                bufferToSend[0] = '6';
-                bufferToSend[1] = nr;
-                write(clientFd, bufferToSend, 3);
-                flag = true;
-            } else if(buffer[0] == '2') { //Czekanie na rozpoczęcie gry
+
+        } else if(buffer[0] == '1') { //Prośba o dołączenie do gry
+            bufferToSend[0] = '6';
+            bufferToSend[1] = nr;
+            write(clientFd, bufferToSend, 3);
+        } else if(buffer[0] == '2') { //Czekanie na rozpoczęcie gry
+            if(!ready) {
                 while(!ready) {this_thread::sleep_for(chrono::milliseconds(1000));}
-                char buff[word[round-1].size()+1];
-                buff[0] = '1';
-                for(int i = 0; i < word[round-1].size(); i++)
-                    buff[i+1] = actualWord[i];
-                write(clientFd, buff, word[round-1].size()+1);
-                flag = true;
-            } else if(buffer[0] >= 'A' && buffer[0] <= 'Z' && !wait) {
-                int score = updateWord(buffer[0]);
-                if(score > 0) {
-                    char buff[word[round-1].size()+1];
-                    buff[0] = '7';
-                    for(int i = 0; i < word[round-1].size(); i++)
-                        buff[i+1] = actualWord[i];
-                    sendToAll(buff, word[round-1].size()+1);
-                    if(checkWord()) nextRound();
-                } else {
-                    //Zrobic aktualizacje pkt i wyslanie tabeli
-                    players.at(nr-1)->hangPoint(round);
-                    bufferToSend[0] = 10;
-                    bufferToSend[1] = players.at(nr-1)->getLives(round);
-                    write(clientFd, bufferToSend, 3);
-                }
-                this_thread::sleep_for(chrono::milliseconds(30));
-                write(clientFd, "8", 1); //Prośba o wyczyszczenie textEdita
-                flag = true;
+                for(Player* p: players)
+                    if(clientFd == p->getFd() && p->isConnected())
+                        sendWord('1', clientFd, false);
+            } else {
+                for(Player* p: players)
+                    if(clientFd == p->getFd() && p->isConnected())
+                        sendWord('1', clientFd, false);
+                sendWord('7', clientFd, true);
             }
+        } else if(buffer[0] >= 'A' && buffer[0] <= 'Z' && !wait) {
+            int score = updateWord(buffer[0]);
+            if(score > 0) {
+                players.at(nr-1)->addPoints(score);
+                sendWord('7', 0, true);
+                if(checkWord()) nextRound();
+            } else { //Jeśli gracz popełni błąd
+                players.at(nr-1)->hangPoint(round); //Odjęcie życia w rundzie
+                bufferToSend[0] = '+';
+                bufferToSend[1] = players.at(nr-1)->getLives(round);
+                write(clientFd, bufferToSend, 3);
+                bool next = true; //Sprawdzenie wszystkich aktywnych graczy, czy mają jeszcze życia
+                for(Player* player: players)
+                    if(player->isConnected())
+                        if(player->hasLives()) next = false;
+                if(next) nextRound(); //Zainicjowanie następnej rundy, jeśli wszyscy są w dupie
+            }
+            this_thread::sleep_for(chrono::milliseconds(60));
+            write(clientFd, "8", 1); //Prośba o wyczyszczenie pola do wypisywania liter
         }
-        if(!flag){
-            bufferToSend[2] = '7'; //nie było wystąpienia litery - punkt karny
-            int res = write(clientFd, bufferToSend, 3);
-        }
+        this_thread::sleep_for(chrono::milliseconds(200));
     }
-}
-
-void Server::nextRound() {
-    round++;
-    wait = true;
-    std::thread t(chrono::milliseconds(2500));
-    if(round == 6) {
-        endGame();
-    } else {
-        for(int i = 0; i < word[round-1].size(); i++)
-            actualWord[i] = '_';
-        char buff[word[round-1].size()+1];
-        buff[0] = round + '0';
-        for(int i = 0; i < word[round-1].size(); i++)
-            buff[i+1] = actualWord[i];
-        sendToAll(buff, word[round-1].size()+1);
-        wait = false;
-    }
-    t.join();
-}
-
-void Server::endGame() {
-    sendToAll("9", 2);
 }
 
 int Server::updateWord(char c) { //Aktualizuje zgadywane słowo o nowe litery
@@ -226,6 +261,69 @@ bool Server::checkWord() { //Sprawdza czy mamy koniec rundy
     for(int i = 0; i < word[round-1].size(); i++)
         if(actualWord[i] == '_') return 0;
     return 1;
+}
+
+void Server::sendWord(char c, int fd, bool all) {
+    syncMutex.lock();
+    sortPlayers();
+
+    //Długość buffa do wysłania
+    int l = word[round-1].size()+2; //Dodajemy 2 znaki na początku
+    for(int i = 0; i < sorted.size(); i++)
+        l += to_string(sorted.at(i)->getPoints()).length()+3;
+
+    //Dodanie znaków do buffa
+    char buff[l];
+    buff[0] = c; //Znak informacyjny
+    for(int i = 0; i < word[round-1].size(); i++)
+        buff[i+1] = actualWord[i]; //Aktualne hasło
+    buff[word[round-1].size()+1] = '-'; //Znak informacyjny o przejściu do rankingu i następnego grazca
+
+    int k = 2;
+    for(int i = 0; i < sorted.size(); i++) {
+        const char* nr = to_string(sorted.at(i)->getNumber()).c_str();
+        if(sorted.at(i)->getNumber() > 9) buff[word[round-1].size()+k] = nr[1];
+        else buff[word[round-1].size()+k] = nr[0];
+        k++;
+
+        const char* c = to_string(sorted.at(i)->getPoints()).c_str();
+        for(int j = 0; j < strlen(c); j++) {
+            buff[word[round-1].size()+k] = c[j];
+            k++;
+        }
+        buff[word[round-1].size()+k] = '-'; //Żeby na końcu nie było minusa
+        k++;
+    }
+
+    //Wysłanie buffa
+    if(all && fd == 0) {
+        sendToAll(buff, l);
+    } else if(all && fd != 0) {
+        sendToOther(fd, buff, l);
+    } else {
+        write(fd, buff, l);
+    }
+    syncMutex.unlock();
+}
+
+void Server::nextRound() {
+    round++;
+    wait = true;
+    std::this_thread::sleep_for(chrono::milliseconds(2500));
+    if(round == 6) {
+        endGame();
+    } else {
+        for(int i = 0; i < word[round-1].size(); i++)
+            actualWord[i] = '_';
+        for (Player* player: players)
+            player->newRound(round);
+        sendWord(round+'0', 0, true);
+        wait = false;
+    }
+}
+
+void Server::endGame() {
+    sendToAll("9", 2);
 }
 
 string Server::intToString(int n) {

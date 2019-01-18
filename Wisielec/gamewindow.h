@@ -19,14 +19,18 @@
 #include <string>
 #include <ctype.h>
 
-
 #include <QWidget>
+#include <QMainWindow>
 #include <QTcpSocket>
 #include <QTimer>
 #include <QThread>
 #include <QObject>
 #include <QProcess>
 #include <QDateTime>
+#include <QGraphicsPixmapItem>
+#include <QStandardItemModel>
+#include <QBrush>
+
 
 using namespace std;
 
@@ -39,17 +43,21 @@ class GameWindow : public QWidget
     Q_OBJECT
 
 public:
-    explicit GameWindow(QString host, int port,  bool ser, QWidget *parent = nullptr);
+    explicit GameWindow(QMainWindow* window, QString host, int port,  bool ser, QWidget *parent = nullptr);
     ~GameWindow();
 
     void connectToServer();
-    void destroyWindow();
 
-    void setHost(QString h) {this->ServerHost = h;}
-    void setPort(quint16 p) {this->ServerPort = p;}
+    void destroyWindow();
+    void endClient();
+
+    void setHost(QString h) {ServerHost = h;}
+    void setPort(quint16 p) {ServerPort = p;}
 
     void setServer() {this->s = true;}
     bool isServer() {return this->s;}
+    bool isEnd() {return end;}
+    bool isActive() {return active;}
 
 
 protected:
@@ -59,27 +67,41 @@ protected:
     void socketConnected();
     void readFromServer();
     void sendToServer(char c);
-    //void sendToServer(QString t);
 
     void startGame(QString word);
     void newRound(QString word);
+
+    void showPicture(int nr);
     void inGame(char c);
+
     void updateWord(QString word);
+    void updateLives(char c);
+    void updatePoints(QString word);
+
+    void stopGame();
     void endGame();
 
 private slots:
     void on_letterBtn_clicked();
 
 private:
+    QStandardItemModel *rankingModel;
+    QVector<QGraphicsScene*> scenes;
+    QMainWindow* homeWindow;
+
     Ui::GameWindow *ui;
+
     int desc;
+    int serverFd;
+    int playerNr;
+
     QString ServerHost;
     quint16 ServerPort;
     string hostServer;
-    int portServer;
-    int serverFd;
+
     bool s; //Zmienna informujaca czy dany klient jest odpowiedzialny za stworzenie serwera dla gry w ktorej uczestniczy
     bool end;
+    bool active;
 };
 
 #endif // GAMEWINDOW_H

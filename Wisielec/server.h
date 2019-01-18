@@ -17,9 +17,12 @@
 #include <signal.h>
 #include <iostream>
 #include <string>
+#include <fstream>
 #include <sstream>
 #include <string.h>
 #include <vector>
+#include <algorithm>
+#include <mutex>
 
 #include "player.h"
 
@@ -30,41 +33,48 @@ class Server {
 public:
     Server(char * p);
     ~Server();
-    void ctrl_c(int);
+
     void run();
-    void sendToAllBut(int fd, char * buffer, int count);
     uint16_t readPort(char * txt);
     void setReuseAddr(int sock);
-    void sendToOne(int clientFd, char* txt, int l);
-    void sendToAll(char* txt, int l);
-    void readMessage(int fd, int nr);
     void closeServer();
-    void connectPlayerToServer(int fd);
+
+    void sendToAll(char* txt, int l);
+    void sendToOther(int clientFd, char* txt, int l);
+
     void waitForPlayers();
+    void connectPlayerToServer(int fd);
+    void sortPlayers();
+    bool compare(Player* p1, Player* p2);
+
+    void readMessage(int fd, int nr);
     int updateWord(char c);
     bool checkWord();
+    void sendWord(char c, int fd, bool all);
     void nextRound();
     void endGame();
 
+    const char* getPort() {return prt;}
     string intToString(int n);
 private:
     char * prt;
+
     int serverFd;
     unordered_set<int> clientFds;
     int clientServFd;
+
     int playersNumber;
     int round;
-
-    string word[5] = {"JEBACJEBACZ", "STUDIA", "NADCHODZI", "SESJA", "WARUNY"};
+    string word[5];
     char actualWord[255];
+
     bool ready;
     bool end;
     bool wait;
 
-    vector<Player*> players;
+    vector<Player*> players; //Wektor graczy
+    vector<Player*> sorted; //Posortowany wektor graczy, będący ich rankingiem
+    mutex syncMutex;
 };
-
-
-
 
 #endif // SERVER_H
