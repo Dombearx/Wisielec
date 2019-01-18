@@ -110,8 +110,7 @@ void GameWindow::updatePoints(QString text) {
     if(text.size() > l+1)
         text.remove(l+1, text.size()-l-1);
     p = p - 1;
-    cout << text.toStdString() << endl;
-    cout << p << endl;
+
     QBrush brushBackground(Qt::blue);
     rankingModel->setRowCount(0);
     rankingModel->setRowCount(10);
@@ -232,7 +231,11 @@ void GameWindow::endGame() {
 
 void GameWindow::on_letterBtn_clicked() {
     char *letter = ((QByteArray) ui->letterEdit->text().toLocal8Bit()).toUpper().data();
-    sendToServer(letter[0]);
+    if(ui->letterEdit->text().size() != 1) {
+        QMessageBox::warning(this, "Błąd", "Zła liczba znaków!");
+    } else if(letter[0] < 'A' || letter[0] > 'Z') {
+        QMessageBox::warning(this, "Błąd", "Znaki spoza zakresu!\n(brak polskich znaków)");
+    } else sendToServer(letter[0]);
 }
 
 void GameWindow::destroyWindow() {

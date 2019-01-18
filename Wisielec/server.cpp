@@ -3,6 +3,31 @@
 using namespace std;
 
 Server::Server(char * p) {
+    srand( time( NULL ) );
+    unsigned int j = 0;
+    vector<string> v;
+    ifstream ifs ("words.txt", ifstream::in);
+    string w;
+    while(ifs >> w){
+        v.push_back(w);
+        j++;
+    }
+    ifs.close();
+
+    vector<int> l;
+    for(int i = 0; i < 5; i++) {
+        bool repeat = true;
+        int liczba;
+        while(repeat) {
+            repeat = false;
+            liczba = (rand() % j);
+            for(int j = 0; j < i; j++)
+                if(l.at(j) == liczba) repeat = true;
+        }
+        l.push_back(liczba);
+        word[i] = v.at(liczba);
+    }
+
     prt = p;
     serverFd = 0;
     clientServFd = 0;
@@ -13,13 +38,12 @@ Server::Server(char * p) {
 }
 
 Server::~Server() {
-    closeServer();
+
 }
 
 
 
 void Server::run() {
-    cout << prt << endl;
     auto port = readPort(prt);
     int servFd = socket(AF_INET, SOCK_STREAM, 0);
     serverFd = servFd;
@@ -103,7 +127,6 @@ void Server::closeServer(){
     for(int clientFd : clientFds)
         close(clientFd);
     close(serverFd);
-    cout << "Server closed" << endl;
     terminate();
 }
 

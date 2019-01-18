@@ -17,11 +17,13 @@
 #include <signal.h>
 #include <iostream>
 #include <string>
+#include <fstream>
 #include <sstream>
 #include <string.h>
 #include <vector>
 #include <algorithm>
 #include <mutex>
+//#include <cstdlib>
 
 #include "player.h"
 
@@ -60,7 +62,7 @@ private:
     int playersNumber;
     int round;
 
-    string word[5] = {"JEBACJEBACZ", "STUDIA", "NADCHODZI", "SESJA", "WARUNY"};
+    string word[5];
     char actualWord[255];
     bool ready;
     bool end;
