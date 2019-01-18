@@ -20,6 +20,7 @@
 #include <ctype.h>
 
 #include <QWidget>
+#include <QMainWindow>
 #include <QTcpSocket>
 #include <QTimer>
 #include <QThread>
@@ -42,15 +43,17 @@ class GameWindow : public QWidget
     Q_OBJECT
 
 public:
-    explicit GameWindow(QString host, int port,  bool ser, QWidget *parent = nullptr);
+    explicit GameWindow(QMainWindow* window, QString host, int port,  bool ser, QWidget *parent = nullptr);
     ~GameWindow();
 
     void connectToServer();
     void destroyWindow();
     void endClient();
 
-    void setHost(QString h) {this->ServerHost = h;}
-    void setPort(quint16 p) {this->ServerPort = p;}
+    void setHost(QString h) {ServerHost = h;}
+    void setPort(quint16 p) {ServerPort = p;}
+    const char* getPort() {return reinterpret_cast<char*>(portServer);}
+    int getNumber() {return playerNr;}
 
     void setServer() {this->s = true;}
     bool isServer() {return this->s;}
@@ -83,6 +86,7 @@ private slots:
 private:
     QStandardItemModel *rankingModel;
     QVector<QGraphicsScene*> scenes;
+    QMainWindow* homeWindow;
     Ui::GameWindow *ui;
     int desc;
     QString ServerHost;

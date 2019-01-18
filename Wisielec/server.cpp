@@ -108,6 +108,16 @@ void Server::waitForPlayers() {
     for(int i = 0; i < word[round-1].size(); i++)
         actualWord[i] = '_';
     wait = false;
+
+    while(true) {
+        char buff[2];
+        buff[0] = '*';
+        for(Player* p: players)
+            if(p->isConnected())
+                write(p->getFd(), buff, 2);
+
+        this_thread::sleep_for(chrono::milliseconds(2000));
+    }
 }
 
 uint16_t Server::readPort(char * txt){
@@ -184,6 +194,7 @@ void Server::readMessage(int clientFd, int nr) {
             }
             clientFds.erase(clientFd);
             close(clientFd);
+
         } else if(buffer[0] == '1') { //Prośba o dołączenie do gry
             bufferToSend[0] = '6';
             bufferToSend[1] = nr;
@@ -191,9 +202,13 @@ void Server::readMessage(int clientFd, int nr) {
         } else if(buffer[0] == '2') { //Czekanie na rozpoczęcie gry
             if(!ready) {
                 while(!ready) {this_thread::sleep_for(chrono::milliseconds(1000));}
-                sendWord('1', clientFd, false);
+                for(Player* p: players)
+                    if(clientFd == p->getFd() && p->isConnected())
+                        sendWord('1', clientFd, false);
             } else {
-                sendWord('1', clientFd, false);
+                for(Player* p: players)
+                    if(clientFd == p->getFd() && p->isConnected())
+                        sendWord('1', clientFd, false);
                 sendWord('7', clientFd, true);
             }
         } else if(buffer[0] >= 'A' && buffer[0] <= 'Z' && !wait) {

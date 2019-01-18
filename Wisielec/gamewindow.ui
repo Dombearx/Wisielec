@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>500</width>
+    <width>530</width>
     <height>310</height>
    </rect>
   </property>
@@ -23,8 +23,8 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>40</y>
-     <width>351</width>
+     <y>200</y>
+     <width>501</width>
      <height>91</height>
     </rect>
    </property>
@@ -46,7 +46,7 @@ p, li { white-space: pre-wrap; }
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>10</y>
+     <y>0</y>
      <width>271</width>
      <height>31</height>
     </rect>
@@ -61,8 +61,8 @@ p, li { white-space: pre-wrap; }
   <widget class="QGraphicsView" name="graphicsView">
    <property name="geometry">
     <rect>
-     <x>320</x>
-     <y>130</y>
+     <x>340</x>
+     <y>10</y>
      <width>171</width>
      <height>171</height>
     </rect>
@@ -74,9 +74,9 @@ p, li { white-space: pre-wrap; }
   <widget class="QTableView" name="rankingView">
    <property name="geometry">
     <rect>
-     <x>10</x>
-     <y>200</y>
-     <width>231</width>
+     <x>110</x>
+     <y>30</y>
+     <width>221</width>
      <height>101</height>
     </rect>
    </property>
@@ -84,9 +84,9 @@ p, li { white-space: pre-wrap; }
   <widget class="QLineEdit" name="userEdit">
    <property name="geometry">
     <rect>
-     <x>370</x>
-     <y>40</y>
-     <width>120</width>
+     <x>10</x>
+     <y>50</y>
+     <width>71</width>
      <height>25</height>
     </rect>
    </property>
@@ -100,8 +100,8 @@ p, li { white-space: pre-wrap; }
   <widget class="QLabel" name="label_2">
    <property name="geometry">
     <rect>
-     <x>370</x>
-     <y>20</y>
+     <x>10</x>
+     <y>30</y>
      <width>101</width>
      <height>16</height>
     </rect>
@@ -134,7 +134,7 @@ p, li { white-space: pre-wrap; }
     <rect>
      <x>70</x>
      <y>140</y>
-     <width>241</width>
+     <width>261</width>
      <height>41</height>
     </rect>
    </property>
@@ -145,21 +145,21 @@ p, li { white-space: pre-wrap; }
   <widget class="QLabel" name="label_3">
    <property name="geometry">
     <rect>
-     <x>10</x>
-     <y>180</y>
+     <x>100</x>
+     <y>10</y>
      <width>231</width>
      <height>21</height>
     </rect>
    </property>
    <property name="text">
-    <string>Ranking</string>
+    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;right&quot;&gt;Ranking&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_4">
    <property name="geometry">
     <rect>
-     <x>370</x>
-     <y>70</y>
+     <x>10</x>
+     <y>80</y>
      <width>67</width>
      <height>17</height>
     </rect>
@@ -171,9 +171,9 @@ p, li { white-space: pre-wrap; }
   <widget class="QLineEdit" name="pointsView">
    <property name="geometry">
     <rect>
-     <x>370</x>
-     <y>90</y>
-     <width>120</width>
+     <x>10</x>
+     <y>100</y>
+     <width>71</width>
      <height>25</height>
     </rect>
    </property>

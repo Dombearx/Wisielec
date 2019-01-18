@@ -54,6 +54,7 @@ public:
     void endGame();
     bool compare(Player* p1, Player* p2);
     string intToString(int n);
+    const char* getPort() {return prt;}
 private:
     char * prt;
     int serverFd;

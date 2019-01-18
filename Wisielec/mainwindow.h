@@ -27,6 +27,7 @@ public:
     ~MainWindow();
 
     void waitForServer();
+    QVector<int> closeVector;
 
 protected:
     QTimer * connTimeoutTimer;
