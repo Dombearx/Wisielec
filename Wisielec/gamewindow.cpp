@@ -5,10 +5,11 @@
 
 using namespace std;
 
-GameWindow::GameWindow(QString host, int port, bool ser, QWidget *parent) :
+GameWindow::GameWindow(QMainWindow* window, QString host, int port, bool ser, QWidget *parent) :
     QWidget(parent),
     ui(new Ui::GameWindow)
 {
+    homeWindow = window;
     end = false;
     active = true;
     s = ser;
@@ -96,7 +97,7 @@ void GameWindow::readFromServer() {
         endGame();
     } else if(date[0] == '+') { //Zła litera
         updateLives(date[1]);
-    }
+    } else if(date[0] == '*' && this->isHidden()) destroyWindow();
 }
 
 void GameWindow::updatePoints(QString text) {
