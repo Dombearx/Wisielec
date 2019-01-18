@@ -41,6 +41,7 @@ public:
     {
         if (GameWindow->objectName().isEmpty())
             GameWindow->setObjectName(QString::fromUtf8("GameWindow"));
+        GameWindow->setWindowModality(Qt::NonModal);
         GameWindow->resize(481, 379);
         textEdit = new QTextEdit(GameWindow);
         textEdit->setObjectName(QString::fromUtf8("textEdit"));
@@ -91,12 +92,12 @@ public:
 
     void retranslateUi(QWidget *GameWindow)
     {
-        GameWindow->setWindowTitle(QApplication::translate("GameWindow", "Form", nullptr));
+        GameWindow->setWindowTitle(QApplication::translate("GameWindow", "Wisielec", nullptr));
         textEdit->setHtml(QApplication::translate("GameWindow", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
 "p, li { white-space: pre-wrap; }\n"
-"</style></head><body style=\" font-family:'Ubuntu'; font-size:11pt; font-weight:400; font-style:normal;\">\n"
-"<p align=\"center\" style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Cantarell';\"><br /></p></body></html>", nullptr));
+"</style></head><body style=\" font-family:'Cantarell'; font-size:11pt; font-weight:400; font-style:normal;\">\n"
+"<p align=\"center\" style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><br /></p></body></html>", nullptr));
         label->setText(QApplication::translate("GameWindow", "<html><head/><body><p>\305\201\304\205czenie z serwerem</p></body></html>", nullptr));
         userEdit->setText(QApplication::translate("GameWindow", "player", nullptr));
         label_2->setText(QApplication::translate("GameWindow", "Nazwa gracza", nullptr));

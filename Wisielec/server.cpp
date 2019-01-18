@@ -46,7 +46,7 @@ void Server::run() {
 
     std::thread(&Server::waitForPlayers, this).detach();
 
-    while(playersNumber < 10){
+    while(playersNumber < 10 && !end){
         connectPlayerToServer(servFd);
     }
 }
@@ -103,8 +103,8 @@ void Server::closeServer(){
     for(int clientFd : clientFds)
         close(clientFd);
     close(serverFd);
+    cout << "Server closed" << endl;
     terminate();
-    printf("Server closed\n");
 }
 
 void Server::sendToOne(int fd, char* buffer, int length) {
@@ -121,69 +121,84 @@ void Server::sendToAll(char* buffer, int length){
         res = write(fd, buffer, length);
         if(res != length) {
             printf("Usuwanie %d\n", fd);
-            clientFds.erase(fd);
-            close(fd);
         }
     }
 }
 
-void Server::readMessage(int clientFd, int nr) {
-    while(true) {
-        // read a message
-        char buffer[1] = "";
-        char bufferToSend[3] = "";
-        ssize_t count = read(clientFd, buffer, 1);
-        if (count < 1) {
-            printf("removing %d\n", clientFd);
-            clientFds.erase(clientFd);
-            close(clientFd);
-            continue;
-        } else {
-            if(buffer[0] == '0') { //Zamknięcie serwera
-                end = true;
-                bufferToSend[0] = buffer[0];
-                bufferToSend[1] = '0';
-                sendToAll(bufferToSend, 3);
-                this->~Server();
-            } else if(buffer[0] == '1') { //Prośba o dołączenie do gry
-                bufferToSend[0] = '6';
-                bufferToSend[1] = nr;
-                write(clientFd, bufferToSend, 3);
-            } else if(buffer[0] == '2') { //Czekanie na rozpoczęcie gry
-                if(!ready) {
-                    while(!ready) {this_thread::sleep_for(chrono::milliseconds(1000));}
-                    sendWord('1', clientFd, false);
-                } else {
-                    sendWord('1', clientFd, false);
-                    this_thread::sleep_for(chrono::milliseconds(100));
-                    sendWord('7', 0, true);
-                    cout << "DONE2" << endl;
-                }
-            } else if(buffer[0] >= 'A' && buffer[0] <= 'Z' && !wait) {
-                int score = updateWord(buffer[0]);
-                if(score > 0) {
-                    players.at(nr-1)->addPoints(score);
-                    sendWord('7', 0, true);
-                    if(checkWord()) nextRound();
-                } else { //Jeśli gracz popełni błąd
-                    players.at(nr-1)->hangPoint(round); //Odjęcie życia w rundzie
-                    bufferToSend[0] = '+';
-                    bufferToSend[1] = players.at(nr-1)->getLives(round);
-                    write(clientFd, bufferToSend, 3);
-                    bool next = true; //Sprawdzenie wszystkich aktywnych graczy, czy mają jeszcze życia
-                    for(Player* player: players)
-                        if(player->isConnected())
-                            if(player->hasLives()) next = false;
-                    if(next) nextRound(); //Zainicjowanie następnej rundy, jeśli wszyscy są w dupie
-                }
-                this_thread::sleep_for(chrono::milliseconds(60));
-                write(clientFd, "8", 1); //Prośba o wyczyszczenie pola do wypisywania liter
+void Server::sendToOther(int client, char* buffer, int length){
+    ssize_t res;
+    for(int fd : clientFds){
+        if(client != fd) {
+            res = write(fd, buffer, length);
+            if(res != length) {
+                printf("Usuwanie %d\n", fd);
             }
         }
     }
 }
 
+void Server::readMessage(int clientFd, int nr) {
+    while(!end) {
+        // read a message
+        char buffer[1] = "";
+        char bufferToSend[3] = "";
+        ssize_t count = read(clientFd, buffer, 1);
+        if (count < 1) {
+            count = 1;
+            buffer[1] = '0';
+        }
+
+        if(buffer[0] == '0') {
+            players.at(nr-1)->disconnect();
+            bufferToSend[0] = buffer[0];
+            bufferToSend[1] = '0';
+            if(clientServFd == clientFd) {
+                end = true;
+                sendToAll(bufferToSend, 3);
+                terminate();
+            } else {
+                write(clientFd, bufferToSend, 3);
+            }
+            clientFds.erase(clientFd);
+            close(clientFd);
+        } else if(buffer[0] == '1') { //Prośba o dołączenie do gry
+            bufferToSend[0] = '6';
+            bufferToSend[1] = nr;
+            write(clientFd, bufferToSend, 3);
+        } else if(buffer[0] == '2') { //Czekanie na rozpoczęcie gry
+            if(!ready) {
+                while(!ready) {this_thread::sleep_for(chrono::milliseconds(1000));}
+                sendWord('1', clientFd, false);
+            } else {
+                sendWord('1', clientFd, false);
+                sendWord('7', clientFd, true);
+            }
+        } else if(buffer[0] >= 'A' && buffer[0] <= 'Z' && !wait) {
+            int score = updateWord(buffer[0]);
+            if(score > 0) {
+                players.at(nr-1)->addPoints(score);
+                sendWord('7', 0, true);
+                if(checkWord()) nextRound();
+            } else { //Jeśli gracz popełni błąd
+                players.at(nr-1)->hangPoint(round); //Odjęcie życia w rundzie
+                bufferToSend[0] = '+';
+                bufferToSend[1] = players.at(nr-1)->getLives(round);
+                write(clientFd, bufferToSend, 3);
+                bool next = true; //Sprawdzenie wszystkich aktywnych graczy, czy mają jeszcze życia
+                for(Player* player: players)
+                    if(player->isConnected())
+                        if(player->hasLives()) next = false;
+                if(next) nextRound(); //Zainicjowanie następnej rundy, jeśli wszyscy są w dupie
+            }
+            this_thread::sleep_for(chrono::milliseconds(60));
+            write(clientFd, "8", 1); //Prośba o wyczyszczenie pola do wypisywania liter
+        }
+        this_thread::sleep_for(chrono::milliseconds(200));
+    }
+}
+
 void Server::sendWord(char c, int fd, bool all) {
+    syncMutex.lock();
     sortPlayers();
 
     //Długość buffa do wysłania
@@ -215,12 +230,15 @@ void Server::sendWord(char c, int fd, bool all) {
     }
 
     //Wysłanie buffa
-    if(all) {
+    if(all && fd == 0) {
         sendToAll(buff, l);
+    } else if(all && fd != 0) {
+        sendToOther(fd, buff, l);
     } else {
         write(fd, buff, l);
     }
-    std::this_thread::sleep_for(chrono::milliseconds(50));
+    this_thread::sleep_for(chrono::milliseconds(100));
+    syncMutex.unlock();
 }
 
 void Server::nextRound() {
@@ -262,7 +280,25 @@ bool Server::checkWord() { //Sprawdza czy mamy koniec rundy
 }
 
 void Server::sortPlayers() {
-    sort(sorted.begin(), sorted.end(), [](Player* a, Player*b) {return a > b;});
+    sort(sorted.begin(), sorted.end(), [this](Player* a, Player*b) {return compare(a, b);});
+}
+
+bool Server::compare(Player* p1, Player* p2) {
+    if(p1->getPoints() == p2->getPoints() ) {
+        if(p1->isConnected() && !p2->isConnected()) return true;
+        else if(!p1->isConnected() && p2->isConnected()) return false;
+        else {
+            int sumlive1 = 0, sumlive2 = 0;
+            for(int i = 0; i < 5; i++) {
+                sumlive1 += p1->getLives(i);
+                sumlive2 += p2->getLives(i);
+            }
+            if(sumlive1 > sumlive2) return true;
+            else return false;
+        }
+    } else {
+        return (p1->getPoints() > p2->getPoints());
+    }
 }
 
 string Server::intToString(int n) {

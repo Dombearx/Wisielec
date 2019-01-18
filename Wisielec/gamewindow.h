@@ -47,12 +47,15 @@ public:
 
     void connectToServer();
     void destroyWindow();
+    void endClient();
 
     void setHost(QString h) {this->ServerHost = h;}
     void setPort(quint16 p) {this->ServerPort = p;}
 
     void setServer() {this->s = true;}
     bool isServer() {return this->s;}
+    bool isEnd() {return end;}
+    bool isActive() {return active;}
 
 
 protected:
@@ -71,6 +74,7 @@ protected:
     void updateLives(char c);
     void updatePoints(QString word);
     void showPicture(int nr);
+    void stopGame();
     void endGame();
 
 private slots:
@@ -89,6 +93,7 @@ private:
     int playerNr;
     bool s; //Zmienna informujaca czy dany klient jest odpowiedzialny za stworzenie serwera dla gry w ktorej uczestniczy
     bool end;
+    bool active;
 };
 
 #endif // GAMEWINDOW_H

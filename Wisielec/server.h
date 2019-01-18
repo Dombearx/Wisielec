@@ -21,6 +21,7 @@
 #include <string.h>
 #include <vector>
 #include <algorithm>
+#include <mutex>
 
 #include "player.h"
 
@@ -38,6 +39,7 @@ public:
     void setReuseAddr(int sock);
     void sendToOne(int clientFd, char* txt, int l);
     void sendToAll(char* txt, int l);
+    void sendToOther(int clientFd, char* txt, int l);
     void readMessage(int fd, int nr);
     void closeServer();
     void connectPlayerToServer(int fd);
@@ -48,6 +50,7 @@ public:
     void sortPlayers();
     void nextRound();
     void endGame();
+    bool compare(Player* p1, Player* p2);
     string intToString(int n);
 private:
     char * prt;
@@ -65,6 +68,7 @@ private:
 
     vector<Player*> players; //Wektor graczy
     vector<Player*> sorted; //Posortowany wektor graczy, będący ich rankingiem
+    mutex syncMutex;
 };
 
 

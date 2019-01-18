@@ -37,8 +37,9 @@ private:
     Ui::MainWindow *ui;
     bool finish;
     int serverCount;
-    QList<char*> ports;
-    QList<Server*> servers;
+    QVector<char*> ports;
+    QVector<Server*> servers;
+    QVector<GameWindow*> windows;
 };
 
 #endif // MAINWINDOW_H

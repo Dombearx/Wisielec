@@ -10,6 +10,7 @@ GameWindow::GameWindow(QString host, int port, bool ser, QWidget *parent) :
     ui(new Ui::GameWindow)
 {
     end = false;
+    active = true;
     s = ser;
     ui->setupUi(this);
     rankingModel = new QStandardItemModel(ui->rankingView);
@@ -49,12 +50,7 @@ GameWindow::GameWindow(QString host, int port, bool ser, QWidget *parent) :
 
 GameWindow::~GameWindow()
 {
-    end = true;
     delete ui;
-    if(s) {
-        s = false;
-        sendToServer('0');
-    }
 }
 
 void GameWindow::connectToServer(){
@@ -82,9 +78,8 @@ void GameWindow::socketConnected() {
 
 void GameWindow::readFromServer() {
     QByteArray date = sock->read(512);
-    if(date[0] == '0' && !end) {
-        QMessageBox::critical(this, "Błąd", "Brak połączenia");
-        this->~GameWindow();
+    if(date[0] == '0') {
+        stopGame();
     } else if(date[0] == '1')
         startGame(date);
     else if(date[0] == '2' || date[0] == '3' || date[0] == '4' || date[0] == '5')
@@ -107,12 +102,11 @@ void GameWindow::readFromServer() {
 void GameWindow::updatePoints(QString text) {
     int p = 0;
     int l = 0;
-    for(int i = 0; i < text.size(); i++) {
+    for(int i = 0; i < text.size(); i++)
         if(text.at(i) == '-') {
             p++;
             l = i;
         }
-    }
     if(text.size() > l+1)
         text.remove(l+1, text.size()-l-1);
     p = p - 1;
@@ -120,8 +114,11 @@ void GameWindow::updatePoints(QString text) {
     cout << p << endl;
     QBrush brushBackground(Qt::blue);
     rankingModel->setRowCount(0);
-    rankingModel->setRowCount(p);
-    const char* ranking = text.toStdString().c_str();
+    rankingModel->setRowCount(10);
+    char ranking[text.toStdString().size()];
+    for(int j = 0; j < text.toStdString().size(); j++)
+        ranking[j] = text.toStdString().at(j);
+
 
     int i = 1;
     int nr = 0;
@@ -153,7 +150,6 @@ void GameWindow::updatePoints(QString text) {
 
         nr++;
     }
-    cout << "DONE" << endl;
 }
 
 void GameWindow::sendToServer(char c) {
@@ -231,15 +227,25 @@ void GameWindow::endGame() {
     ui->letterBtn->setEnabled(false);
     ui->letterEdit->setText(c);
     ui->letterEdit->setEnabled(false);
+    sock->close();
 }
 
-void GameWindow::on_letterBtn_clicked()
-{
+void GameWindow::on_letterBtn_clicked() {
     char *letter = ((QByteArray) ui->letterEdit->text().toLocal8Bit()).toUpper().data();
-
     sendToServer(letter[0]);
 }
 
 void GameWindow::destroyWindow() {
-    this->destroy(true,true);
+    sendToServer('0');
+}
+
+void GameWindow::endClient() {
+    active = false;
+    sendToServer('0');
+}
+
+
+void GameWindow::stopGame() {
+    end = true;
+    if(!this->isHidden()) this->setHidden(true);
 }
