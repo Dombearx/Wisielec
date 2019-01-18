@@ -41,11 +41,12 @@ public:
     {
         if (GameWindow->objectName().isEmpty())
             GameWindow->setObjectName(QString::fromUtf8("GameWindow"));
-        GameWindow->resize(481, 379);
+        GameWindow->setWindowModality(Qt::NonModal);
+        GameWindow->resize(500, 310);
         textEdit = new QTextEdit(GameWindow);
         textEdit->setObjectName(QString::fromUtf8("textEdit"));
         textEdit->setEnabled(false);
-        textEdit->setGeometry(QRect(10, 40, 281, 81));
+        textEdit->setGeometry(QRect(10, 40, 351, 91));
         textEdit->setMidLineWidth(0);
         textEdit->setReadOnly(true);
         label = new QLabel(GameWindow);
@@ -54,35 +55,35 @@ public:
         label->setWordWrap(false);
         graphicsView = new QGraphicsView(GameWindow);
         graphicsView->setObjectName(QString::fromUtf8("graphicsView"));
-        graphicsView->setGeometry(QRect(300, 50, 171, 171));
+        graphicsView->setGeometry(QRect(320, 130, 171, 171));
         graphicsView->setResizeAnchor(QGraphicsView::NoAnchor);
         rankingView = new QTableView(GameWindow);
         rankingView->setObjectName(QString::fromUtf8("rankingView"));
-        rankingView->setGeometry(QRect(10, 230, 461, 141));
+        rankingView->setGeometry(QRect(10, 200, 231, 101));
         userEdit = new QLineEdit(GameWindow);
         userEdit->setObjectName(QString::fromUtf8("userEdit"));
-        userEdit->setGeometry(QRect(300, 20, 171, 20));
+        userEdit->setGeometry(QRect(370, 40, 120, 25));
         userEdit->setReadOnly(true);
         label_2 = new QLabel(GameWindow);
         label_2->setObjectName(QString::fromUtf8("label_2"));
-        label_2->setGeometry(QRect(300, 0, 101, 16));
+        label_2->setGeometry(QRect(370, 20, 101, 16));
         letterEdit = new QLineEdit(GameWindow);
         letterEdit->setObjectName(QString::fromUtf8("letterEdit"));
         letterEdit->setEnabled(false);
-        letterEdit->setGeometry(QRect(10, 130, 51, 31));
+        letterEdit->setGeometry(QRect(10, 140, 51, 41));
         letterBtn = new QPushButton(GameWindow);
         letterBtn->setObjectName(QString::fromUtf8("letterBtn"));
         letterBtn->setEnabled(false);
-        letterBtn->setGeometry(QRect(70, 130, 221, 31));
+        letterBtn->setGeometry(QRect(70, 140, 241, 41));
         label_3 = new QLabel(GameWindow);
         label_3->setObjectName(QString::fromUtf8("label_3"));
-        label_3->setGeometry(QRect(10, 210, 111, 21));
+        label_3->setGeometry(QRect(10, 180, 231, 21));
         label_4 = new QLabel(GameWindow);
         label_4->setObjectName(QString::fromUtf8("label_4"));
-        label_4->setGeometry(QRect(10, 180, 67, 17));
+        label_4->setGeometry(QRect(370, 70, 67, 17));
         pointsView = new QLineEdit(GameWindow);
         pointsView->setObjectName(QString::fromUtf8("pointsView"));
-        pointsView->setGeometry(QRect(70, 180, 113, 25));
+        pointsView->setGeometry(QRect(370, 90, 120, 25));
 
         retranslateUi(GameWindow);
 
@@ -91,12 +92,12 @@ public:
 
     void retranslateUi(QWidget *GameWindow)
     {
-        GameWindow->setWindowTitle(QApplication::translate("GameWindow", "Form", nullptr));
+        GameWindow->setWindowTitle(QApplication::translate("GameWindow", "Wisielec", nullptr));
         textEdit->setHtml(QApplication::translate("GameWindow", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
 "p, li { white-space: pre-wrap; }\n"
-"</style></head><body style=\" font-family:'Ubuntu'; font-size:11pt; font-weight:400; font-style:normal;\">\n"
-"<p align=\"center\" style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Cantarell';\"><br /></p></body></html>", nullptr));
+"</style></head><body style=\" font-family:'Cantarell'; font-size:11pt; font-weight:400; font-style:normal;\">\n"
+"<p align=\"center\" style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><br /></p></body></html>", nullptr));
         label->setText(QApplication::translate("GameWindow", "<html><head/><body><p>\305\201\304\205czenie z serwerem</p></body></html>", nullptr));
         userEdit->setText(QApplication::translate("GameWindow", "player", nullptr));
         label_2->setText(QApplication::translate("GameWindow", "Nazwa gracza", nullptr));
