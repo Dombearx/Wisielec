@@ -41,16 +41,12 @@ Server::~Server() {
 
 }
 
-
-
 void Server::run() {
     auto port = readPort(prt);
     int servFd = socket(AF_INET, SOCK_STREAM, 0);
     serverFd = servFd;
     if(servFd == -1) error(1, errno, "socket failed");
 
-    // graceful ctrl+c exit
-    //signal(SIGINT, ctrl_c);
     // prevent dead sockets from throwing pipe errors on write
     signal(SIGPIPE, SIG_IGN);
 
@@ -72,6 +68,67 @@ void Server::run() {
 
     while(playersNumber < 10 && !end){
         connectPlayerToServer(servFd);
+    }
+}
+
+uint16_t Server::readPort(char * txt){
+    char * ptr;
+    auto port = strtol(txt, &ptr, 10);
+    if(*ptr!=0 || port<1 || (port>((1<<16)-1))) error(1,0,"illegal argument %s", txt);
+    return port;
+}
+
+void Server::setReuseAddr(int sock){
+    const int one = 1;
+    int res = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+    if(res) error(1,errno, "setsockopt failed");
+}
+
+void Server::closeServer(){
+    for(int clientFd : clientFds)
+        close(clientFd);
+    close(serverFd);
+    terminate();
+}
+
+void Server::sendToAll(char* buffer, int length){
+    ssize_t res;
+    for(int fd : clientFds){
+        res = write(fd, buffer, length);
+        if(res != length) {
+            printf("Usuwanie %d\n", fd);
+        }
+    }
+}
+
+void Server::sendToOther(int client, char* buffer, int length){
+    ssize_t res;
+    for(int fd : clientFds){
+        if(client != fd) {
+            res = write(fd, buffer, length);
+            if(res != length) {
+                printf("Usuwanie %d\n", fd);
+            }
+        }
+    }
+}
+
+void Server::waitForPlayers() {
+    this_thread::sleep_for(chrono::milliseconds(15000));
+    round = 1;
+    ready = true;
+    for(int i = 0; i < word[round-1].size(); i++)
+        actualWord[i] = '_';
+    wait = false;
+
+    while(true) {
+        char buff[2];
+        buff[0] = '*';
+        for(Player* p: players)
+            if(p->isConnected())
+                write(p->getFd(), buff, 2);
+
+        this_thread::sleep_for(chrono::milliseconds(2000));
     }
 }
 
@@ -101,72 +158,25 @@ void Server::connectPlayerToServer(int servFd) {
     std::thread(&Server::readMessage, this, clientFd, playersNumber).detach();
 }
 
-void Server::waitForPlayers() {
-    this_thread::sleep_for(chrono::milliseconds(15000));
-    round = 1;
-    ready = true;
-    for(int i = 0; i < word[round-1].size(); i++)
-        actualWord[i] = '_';
-    wait = false;
-
-    while(true) {
-        char buff[2];
-        buff[0] = '*';
-        for(Player* p: players)
-            if(p->isConnected())
-                write(p->getFd(), buff, 2);
-
-        this_thread::sleep_for(chrono::milliseconds(2000));
-    }
+void Server::sortPlayers() {
+    sort(sorted.begin(), sorted.end(), [this](Player* a, Player*b) {return compare(a, b);});
 }
 
-uint16_t Server::readPort(char * txt){
-    char * ptr;
-    auto port = strtol(txt, &ptr, 10);
-    if(*ptr!=0 || port<1 || (port>((1<<16)-1))) error(1,0,"illegal argument %s", txt);
-    return port;
-}
-
-void Server::setReuseAddr(int sock){
-    const int one = 1;
-    int res = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
-    if(res) error(1,errno, "setsockopt failed");
-}
-
-void Server::closeServer(){
-    for(int clientFd : clientFds)
-        close(clientFd);
-    close(serverFd);
-    terminate();
-}
-
-void Server::sendToOne(int fd, char* buffer, int length) {
-    ssize_t res = write(fd, buffer, length);
-    if(res != length)
-        printf("Usuwanie %d\n", fd);
-        clientFds.erase(fd);
-        close(fd);
-}
-
-void Server::sendToAll(char* buffer, int length){
-    ssize_t res;
-    for(int fd : clientFds){
-        res = write(fd, buffer, length);
-        if(res != length) {
-            printf("Usuwanie %d\n", fd);
-        }
-    }
-}
-
-void Server::sendToOther(int client, char* buffer, int length){
-    ssize_t res;
-    for(int fd : clientFds){
-        if(client != fd) {
-            res = write(fd, buffer, length);
-            if(res != length) {
-                printf("Usuwanie %d\n", fd);
+bool Server::compare(Player* p1, Player* p2) {
+    if(p1->getPoints() == p2->getPoints() ) {
+        if(p1->isConnected() && !p2->isConnected()) return true;
+        else if(!p1->isConnected() && p2->isConnected()) return false;
+        else {
+            int sumlive1 = 0, sumlive2 = 0;
+            for(int i = 0; i < 5; i++) {
+                sumlive1 += p1->getLives(i);
+                sumlive2 += p2->getLives(i);
             }
+            if(sumlive1 > sumlive2) return true;
+            else return false;
         }
+    } else {
+        return (p1->getPoints() > p2->getPoints());
     }
 }
 
@@ -235,6 +245,24 @@ void Server::readMessage(int clientFd, int nr) {
     }
 }
 
+int Server::updateWord(char c) { //Aktualizuje zgadywane słowo o nowe litery
+    int score = 0;
+    int l = word[round-1].size();
+    for(int i = 0; i < l; i++) {
+        if(word[round-1].at(i) == c && actualWord[i] == '_') {
+            actualWord[i] = word[round-1].at(i);
+            score++;
+        }
+    }
+    return score;
+}
+
+bool Server::checkWord() { //Sprawdza czy mamy koniec rundy
+    for(int i = 0; i < word[round-1].size(); i++)
+        if(actualWord[i] == '_') return 0;
+    return 1;
+}
+
 void Server::sendWord(char c, int fd, bool all) {
     syncMutex.lock();
     sortPlayers();
@@ -275,7 +303,6 @@ void Server::sendWord(char c, int fd, bool all) {
     } else {
         write(fd, buff, l);
     }
-    this_thread::sleep_for(chrono::milliseconds(100));
     syncMutex.unlock();
 }
 
@@ -297,46 +324,6 @@ void Server::nextRound() {
 
 void Server::endGame() {
     sendToAll("9", 2);
-}
-
-int Server::updateWord(char c) { //Aktualizuje zgadywane słowo o nowe litery
-    int score = 0;
-    int l = word[round-1].size();
-    for(int i = 0; i < l; i++) {
-        if(word[round-1].at(i) == c && actualWord[i] == '_') {
-            actualWord[i] = word[round-1].at(i);
-            score++;
-        }
-    }
-    return score;
-}
-
-bool Server::checkWord() { //Sprawdza czy mamy koniec rundy
-    for(int i = 0; i < word[round-1].size(); i++)
-        if(actualWord[i] == '_') return 0;
-    return 1;
-}
-
-void Server::sortPlayers() {
-    sort(sorted.begin(), sorted.end(), [this](Player* a, Player*b) {return compare(a, b);});
-}
-
-bool Server::compare(Player* p1, Player* p2) {
-    if(p1->getPoints() == p2->getPoints() ) {
-        if(p1->isConnected() && !p2->isConnected()) return true;
-        else if(!p1->isConnected() && p2->isConnected()) return false;
-        else {
-            int sumlive1 = 0, sumlive2 = 0;
-            for(int i = 0; i < 5; i++) {
-                sumlive1 += p1->getLives(i);
-                sumlive2 += p2->getLives(i);
-            }
-            if(sumlive1 > sumlive2) return true;
-            else return false;
-        }
-    } else {
-        return (p1->getPoints() > p2->getPoints());
-    }
 }
 
 string Server::intToString(int n) {

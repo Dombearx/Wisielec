@@ -23,6 +23,20 @@ MainWindow::~MainWindow() {
     this->destroy(true,true);
 }
 
+void MainWindow::waitForServer() {
+    int i = 0;
+    while(!this->isHidden()) {
+        if(i < serverCount) {
+            Server* server = new Server(ports.at(i));
+            servers.append(server);
+            std::thread(&Server::run, server).detach();
+            i=i+1;
+        }
+        this_thread::sleep_for(chrono::milliseconds(1000));
+    }
+    terminate();
+}
+
 void MainWindow::newGameBtnHit() {
     int port = ui->portSpinBox_2->value();
     const char * str = ui->portSpinBox_2->text().toStdString().c_str();
@@ -36,7 +50,6 @@ void MainWindow::newGameBtnHit() {
         ports.append((char*) str);
         serverCount++;
         GameWindow* game1 = new GameWindow(this, "localhost", port, true);
-        closeVector.append(0);
         windows.append(game1);
         game1->show();
     }
@@ -47,24 +60,5 @@ void MainWindow::joinGameBtnHit() {
     int port = ui->portSpinBox->value();
     GameWindow* game2 = new GameWindow(this, host, port, false);
     windows.append(game2);
-    closeVector.append(0);
     game2->show();
-}
-
-void MainWindow::waitForServer() {
-    int i = 0;
-    while(!this->isHidden()) {
-        if(i < serverCount) {
-            Server* server = new Server(ports.at(i));
-            servers.append(server);
-            std::thread(&Server::run, server).detach();
-            i=i+1;
-        }
-        this_thread::sleep_for(chrono::milliseconds(1000));
-    }
-    for(int i = 0; i < windows.size(); i++) {
-        if(windows.at(i)->isHidden() && windows.at(i)->isActive()) windows.at(i)->destroyWindow();
-        windows.at(i)->close();
-    }
-    terminate();
 }
