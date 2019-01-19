@@ -27,7 +27,6 @@ public:
     ~MainWindow();
 
     void waitForServer();
-    QVector<int> closeVector;
 
 protected:
     QTimer * connTimeoutTimer;
@@ -36,8 +35,11 @@ protected:
 
 private:
     Ui::MainWindow *ui;
-    bool finish;
+
     int serverCount;
+
+    bool finish;
+
     QVector<char*> ports;
     QVector<Server*> servers;
     QVector<GameWindow*> windows;

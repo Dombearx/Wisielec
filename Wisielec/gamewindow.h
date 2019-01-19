@@ -47,13 +47,12 @@ public:
     ~GameWindow();
 
     void connectToServer();
+
     void destroyWindow();
     void endClient();
 
     void setHost(QString h) {ServerHost = h;}
     void setPort(quint16 p) {ServerPort = p;}
-    const char* getPort() {return reinterpret_cast<char*>(portServer);}
-    int getNumber() {return playerNr;}
 
     void setServer() {this->s = true;}
     bool isServer() {return this->s;}
@@ -68,15 +67,17 @@ protected:
     void socketConnected();
     void readFromServer();
     void sendToServer(char c);
-    //void sendToServer(QString t);
 
     void startGame(QString word);
     void newRound(QString word);
+
+    void showPicture(int nr);
     void inGame(char c);
+
     void updateWord(QString word);
     void updateLives(char c);
     void updatePoints(QString word);
-    void showPicture(int nr);
+
     void stopGame();
     void endGame();
 
@@ -87,14 +88,17 @@ private:
     QStandardItemModel *rankingModel;
     QVector<QGraphicsScene*> scenes;
     QMainWindow* homeWindow;
+
     Ui::GameWindow *ui;
+
     int desc;
+    int serverFd;
+    int playerNr;
+
     QString ServerHost;
     quint16 ServerPort;
     string hostServer;
-    int portServer;
-    int serverFd;
-    int playerNr;
+
     bool s; //Zmienna informujaca czy dany klient jest odpowiedzialny za stworzenie serwera dla gry w ktorej uczestniczy
     bool end;
     bool active;

@@ -26,7 +26,6 @@ GameWindow::GameWindow(QMainWindow* window, QString host, int port, bool ser, QW
     ServerHost = host;
     ServerPort = port;
     hostServer = host.toStdString();
-    portServer = port;
 
     for(int i = 0; i < 13; i++) {
         QString name = "./pictures/";
@@ -100,6 +99,75 @@ void GameWindow::readFromServer() {
     } else if(date[0] == '*' && this->isHidden()) destroyWindow();
 }
 
+void GameWindow::startGame(QString word) {
+    ui->textEdit->setEnabled(true);
+    ui->letterEdit->setEnabled(true);
+    ui->letterBtn->setEnabled(true);
+    updateWord(word.remove(0, 1));
+    ui->label->setText("Runda 1");
+    showPicture(12);
+}
+
+void GameWindow::newRound(QString word) {
+    QString round = "Runda ";
+    round.append(word[0]);
+    const QString c = "";
+    ui->letterEdit->setText(c);
+    ui->letterBtn->setEnabled(true);
+    ui->label->setText(round);
+    updateWord(word.remove(0, 1));
+    showPicture(12);
+}
+
+void GameWindow::sendToServer(char c) {
+    QString str = QChar(c);
+    QByteArray text = str.toUtf8();
+    sock->write(text);
+}
+
+void GameWindow::showPicture(int nr) {
+    ui->graphicsView->setScene(scenes.at(nr));
+}
+
+void GameWindow::inGame(char c) {
+    ui->label->setText("Połączono. Oczekiwanie na graczy.");
+    int nr = c;
+    playerNr = nr;
+    if(nr > 9) {
+        QString name = "player";
+        name.append(QString::number(c));
+        ui->userEdit->setText(name);
+    } else {
+        QString name = "player0";
+        name.append(QString::number(c));
+        ui->userEdit->setText(name);
+    }
+}
+
+void GameWindow::updateWord(QString word) {
+    QString wordShow = "";
+    int i = 0;
+    while(word.at(i+1) != '-' || i+1 == word.size()) {
+        wordShow.append(word.at(i));
+        wordShow.append(" ");
+        i++;
+    }
+    wordShow.append(word.at(i));
+    ui->textEdit->setHtml("<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\
+                          p, li { white-space: pre-wrap; }\
+                          </style></head><body style=\" font-family:'Cantarell'; font-size:11pt; font-weight:400; font-style:normal;\">\
+                          <p align=\"center\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:'MS Shell Dlg 2';\
+                          font-size:20pt;\">"+wordShow+"</span></p></body></html>");
+    if(word != "Koniec gry")
+        updatePoints(word.remove(0, i+1));
+}
+
+void GameWindow::updateLives(char c) {
+    int lives = c;
+    if(lives == 0) ui->letterBtn->setEnabled(false);
+    showPicture(lives);
+}
+
 void GameWindow::updatePoints(QString text) {
     int p = 0;
     int l = 0;
@@ -152,73 +220,13 @@ void GameWindow::updatePoints(QString text) {
     }
 }
 
-void GameWindow::sendToServer(char c) {
-    QString str = QChar(c);
-    QByteArray text = str.toUtf8();
-    sock->write(text);
-}
-
-void GameWindow::startGame(QString word) {
-    ui->textEdit->setEnabled(true);
-    ui->letterEdit->setEnabled(true);
-    ui->letterBtn->setEnabled(true);
-    updateWord(word.remove(0, 1));
-    ui->label->setText("Runda 1");
-    showPicture(12);
-}
-
-void GameWindow::newRound(QString word) {
-    QString round = "Runda ";
-    round.append(word[0]);
-    const QString c = "";
-    ui->letterEdit->setText(c);
-    ui->letterBtn->setEnabled(true);
-    ui->label->setText(round);
-    updateWord(word.remove(0, 1));
-    showPicture(12);
-}
-
-void GameWindow::inGame(char c) {
-    ui->label->setText("Połączono. Oczekiwanie na graczy.");
-    int nr = c;
-    playerNr = nr;
-    if(nr > 9) {
-        QString name = "player";
-        name.append(QString::number(c));
-        ui->userEdit->setText(name);
-    } else {
-        QString name = "player0";
-        name.append(QString::number(c));
-        ui->userEdit->setText(name);
-    }
-}
-
-void GameWindow::updateWord(QString word) {
-    QString wordShow = "";
-    int i = 0;
-    while(word.at(i+1) != '-' || i+1 == word.size()) {
-        wordShow.append(word.at(i));
-        wordShow.append(" ");
-        i++;
-    }
-    wordShow.append(word.at(i));
-    ui->textEdit->setHtml("<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\
-                          p, li { white-space: pre-wrap; }\
-                          </style></head><body style=\" font-family:'Cantarell'; font-size:11pt; font-weight:400; font-style:normal;\">\
-                          <p align=\"center\" style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:'MS Shell Dlg 2';\
-                          font-size:20pt;\">"+wordShow+"</span></p></body></html>");
-    if(word != "Koniec gry")
-        updatePoints(word.remove(0, i+1));
-}
-
-void GameWindow::updateLives(char c) {
-    int lives = c;
-    if(lives == 0) ui->letterBtn->setEnabled(false);
-    showPicture(lives);
-}
-
-void GameWindow::showPicture(int nr) {
-    ui->graphicsView->setScene(scenes.at(nr));
+void GameWindow::on_letterBtn_clicked() {
+    char *letter = ((QByteArray) ui->letterEdit->text().toLocal8Bit()).toUpper().data();
+    if(ui->letterEdit->text().size() != 1) {
+        QMessageBox::warning(this, "Błąd", "Zła liczba znaków!");
+    } else if(letter[0] < 'A' || letter[0] > 'Z') {
+        QMessageBox::warning(this, "Błąd", "Znaki spoza zakresu!\n(brak polskich znaków)");
+    } else sendToServer(letter[0]);
 }
 
 void GameWindow::endGame() {
@@ -230,15 +238,6 @@ void GameWindow::endGame() {
     sock->close();
 }
 
-void GameWindow::on_letterBtn_clicked() {
-    char *letter = ((QByteArray) ui->letterEdit->text().toLocal8Bit()).toUpper().data();
-    if(ui->letterEdit->text().size() != 1) {
-        QMessageBox::warning(this, "Błąd", "Zła liczba znaków!");
-    } else if(letter[0] < 'A' || letter[0] > 'Z') {
-        QMessageBox::warning(this, "Błąd", "Znaki spoza zakresu!\n(brak polskich znaków)");
-    } else sendToServer(letter[0]);
-}
-
 void GameWindow::destroyWindow() {
     sendToServer('0');
 }
@@ -247,7 +246,6 @@ void GameWindow::endClient() {
     active = false;
     sendToServer('0');
 }
-
 
 void GameWindow::stopGame() {
     end = true;
