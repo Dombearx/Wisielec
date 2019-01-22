@@ -148,12 +148,14 @@ void GameWindow::inGame(char c) {
 void GameWindow::updateWord(QString word) {
     QString wordShow = "";
     int i = 0;
-    while(word.at(i+1) != '-' || i+1 == word.size()) {
+    if(word != "Koniec gry") {
+        while(word.at(i+1) != '-' || i+1 == word.size()) {
+            wordShow.append(word.at(i));
+            wordShow.append(" ");
+            i++;
+        }
         wordShow.append(word.at(i));
-        wordShow.append(" ");
-        i++;
-    }
-    wordShow.append(word.at(i));
+    } else wordShow = "K O N I E C   G R Y";
     ui->textEdit->setHtml("<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\
                           p, li { white-space: pre-wrap; }\
                           </style></head><body style=\" font-family:'Cantarell'; font-size:11pt; font-weight:400; font-style:normal;\">\
@@ -236,7 +238,7 @@ void GameWindow::endGame() {
     ui->letterBtn->setEnabled(false);
     ui->letterEdit->setText(c);
     ui->letterEdit->setEnabled(false);
-    sock->close();
+    //sock->close();
 }
 
 void GameWindow::destroyWindow() {
