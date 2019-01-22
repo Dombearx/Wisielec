@@ -4,29 +4,7 @@ using namespace std;
 
 Server::Server(char * p) {
     srand( time( NULL ) );
-    unsigned int j = 0;
-    vector<string> v;
-    ifstream ifs ("words.txt", ifstream::in);
-    string w;
-    while(ifs >> w){
-        v.push_back(w);
-        j++;
-    }
-    ifs.close();
-
-    vector<int> l;
-    for(int i = 0; i < 5; i++) {
-        bool repeat = true;
-        int liczba;
-        while(repeat) {
-            repeat = false;
-            liczba = (rand() % j);
-            for(int j = 0; j < i; j++)
-                if(l.at(j) == liczba) repeat = true;
-        }
-        l.push_back(liczba);
-        word[i] = v.at(liczba);
-    }
+    loadWords();
 
     prt = p;
     serverFd = 0;
@@ -180,6 +158,33 @@ bool Server::compare(Player* p1, Player* p2) {
     }
 }
 
+void Server::loadWords() {
+    unsigned int number = 0;
+    vector<string> v;
+    ifstream ifs ("words.txt", ifstream::in);
+    string w;
+    while(ifs >> w){
+        v.push_back(w);
+        number++;
+    }
+    ifs.close();
+
+    vector<int> l;
+    for(int i = 0; i < 5; i++) {
+        bool repeat = true;
+        int liczba;
+        while(repeat) {
+            repeat = false;
+            liczba = (rand() % number);
+            for(int j = 0; j < i; j++)
+                if(l.at(j) == liczba) repeat = true;
+        }
+        l.push_back(liczba);
+        word[i] = v.at(liczba);
+    }
+
+}
+
 void Server::readMessage(int clientFd, int nr) {
     while(!end) {
         // read a message
@@ -323,7 +328,7 @@ void Server::nextRound() {
 }
 
 void Server::endGame() {
-    sendToAll("9", 2);
+    sendToAll("9 ", 2);
 }
 
 string Server::intToString(int n) {

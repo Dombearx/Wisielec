@@ -42,7 +42,7 @@ public:
         if (GameWindow->objectName().isEmpty())
             GameWindow->setObjectName(QString::fromUtf8("GameWindow"));
         GameWindow->setWindowModality(Qt::NonModal);
-        GameWindow->resize(530, 310);
+        GameWindow->resize(520, 300);
         textEdit = new QTextEdit(GameWindow);
         textEdit->setObjectName(QString::fromUtf8("textEdit"));
         textEdit->setEnabled(false);
