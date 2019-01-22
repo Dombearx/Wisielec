@@ -84,6 +84,7 @@ public:
         pointsView = new QLineEdit(GameWindow);
         pointsView->setObjectName(QString::fromUtf8("pointsView"));
         pointsView->setGeometry(QRect(10, 100, 71, 25));
+        pointsView->setReadOnly(true);
 
         retranslateUi(GameWindow);
 

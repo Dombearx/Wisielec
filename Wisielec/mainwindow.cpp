@@ -46,8 +46,7 @@ void MainWindow::newGameBtnHit() {
     }
     if(exist) {
         QMessageBox::warning(this, "Błąd", "Port jest zajęty przez inny serwer!");
-    } else {
-        ports.append((char*) str);
+    } else {ports.append((char*) str);
         serverCount++;
         GameWindow* game1 = new GameWindow(this, "localhost", port, true);
         windows.append(game1);
