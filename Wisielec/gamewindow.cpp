@@ -64,10 +64,11 @@ void GameWindow::connectToServer(){
     connTimeoutTimer->setSingleShot(true);
     connect(connTimeoutTimer, &QTimer::timeout, [&]{
         connTimeoutTimer->deleteLater();
-        QMessageBox::critical(this, "Error", "Connect timed out");
+        QMessageBox::critical(this, "Błąd", "Nie udało się połączyć!");
         this->destroy(true,true);
     });
-    connTimeoutTimer->start(3000);
+
+    connTimeoutTimer->start(5000);
 }
 
 void GameWindow::socketConnected() {
