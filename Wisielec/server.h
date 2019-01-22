@@ -47,6 +47,7 @@ public:
     void sortPlayers();
     bool compare(Player* p1, Player* p2);
 
+    void loadWords();
     void readMessage(int fd, int nr);
     int updateWord(char c);
     bool checkWord();
